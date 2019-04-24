@@ -9,5 +9,10 @@
     "@babel/cli": "^7.4.3",
     "@babel/core": "^7.4.3",
     "flow-bin": "0.96.0"
+  },
+  "devDependencies": {
+    "babel-eslint": "^10.0.1",
+    "eslint": "^5.16.0",
+    "eslint-plugin-flowtype": "^3.6.1"
   }
 }
