@@ -21,7 +21,7 @@ module.exports = class TranslationPlugin {
       parser.hooks.import.tap(pluginName, (statement, source) => {
         const sourcePath = path.join(parser.state.current.context, source)
         if (!sourcePath.includes('translations.js')) {
-          console.log(sourcePath, statement.__proto__)
+          // console.log(sourcePath, statement.__proto__)
         }
       })
     }

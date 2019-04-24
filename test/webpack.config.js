@@ -1,7 +1,7 @@
 const path = require('path')
 
 const relativeToRoot = p => path.join(__dirname, '..', p) 
-const babelrc = require('./.babelrc.js')
+const babelrc = require('../.babelrc')
 const TranslationPlugin = require('../src/plugin')
 
 module.exports = {
@@ -37,6 +37,7 @@ module.exports = {
             },
           },
         ],
+        exclude: /node_modules/,
       },
       // {
       //   test: /translations\.js$/,
