@@ -2,12 +2,13 @@ const path = require('path')
 
 const relativeToRoot = p => path.join(__dirname, '..', p) 
 const babelrc = require('./.babelrc.js')
+const TranslationPlugin = require('../src/plugin')
 
 module.exports = {
   mode: 'development',
   entry: {
     a: __dirname + '/index.js',
-    b: __dirname + '/index.js',
+    // b: __dirname + '/index.js',
   },
   target: 'web',
   devtool: 'source-map',
@@ -16,7 +17,9 @@ module.exports = {
     filename: '[name].js',
   },
   plugins: [
-    new (require('../src/plugin')),
+    new TranslationPlugin({
+      languages: ['en', 'fi', 'se'],
+    }),
   ],
   resolve: {
     symlinks: false,

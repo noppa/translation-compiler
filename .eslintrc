@@ -31,6 +31,10 @@
     "quotes": ["error", "single", {"allowTemplateLiterals": true}],
     "semi": ["error", "never"],
     "space-in-parens": ["error", "never"],
-    "space-infix-ops": ["error", {"int32Hint": false}]
+    "space-infix-ops": ["error", {"int32Hint": false}],
+    "no-unused-vars": 0
+  },
+  "globals": {
+    "translations": false
   }
 }

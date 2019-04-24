@@ -8,7 +8,8 @@
   "dependencies": {
     "@babel/cli": "^7.4.3",
     "@babel/core": "^7.4.3",
-    "flow-bin": "0.96.0"
+    "flow-bin": "0.96.0",
+    "loader-utils": "^1.2.3"
   },
   "devDependencies": {
     "@babel/plugin-syntax-dynamic-import": "^7.2.0",
