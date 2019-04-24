@@ -1,0 +1,13 @@
+{
+  "name": "translation-compiler",
+  "version": "1.0.0",
+  "main": "index.js",
+  "author": "Oskari Noppa <oskari.noppa@bolt.works>",
+  "license": "MIT",
+  "private": true,
+  "dependencies": {
+    "@babel/cli": "^7.4.3",
+    "@babel/core": "^7.4.3",
+    "flow-bin": "0.96.0"
+  }
+}
