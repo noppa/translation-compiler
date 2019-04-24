@@ -7,6 +7,7 @@ module.exports = {
   mode: 'development',
   entry: {
     a: __dirname + '/index.js',
+    b: __dirname + '/index.js',
   },
   target: 'web',
   devtool: 'source-map',
