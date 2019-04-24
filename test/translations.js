@@ -1,5 +1,5 @@
 // @flow
-import {t} from 'translate'
+import {t} from '../src/runtime'
 
 export default {
   hello: t<{name: string}>(({name}) => ({

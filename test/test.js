@@ -1,4 +1,4 @@
 // @flow
-import t from './translations'
+import {hello} from './translations'
 
 t.hello({name: 'Bar'})
