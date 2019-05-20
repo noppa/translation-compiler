@@ -1,5 +1,8 @@
 {
-  "root": true,
+	"root": true,
+	"plugins": [
+		"@typescript-eslint"
+	],
   "extends": [
     "plugin:@typescript-eslint/recommended",
     "prettier/@typescript-eslint",
@@ -11,26 +14,14 @@
   },
   "parser": "@typescript-eslint/parser",
   "rules": {
-    "array-bracket-spacing": ["error", "never"],
-    "arrow-spacing": "error",
-    "comma-dangle": ["error", "always-multiline"],
-    "comma-spacing": "error",
-    "display-name": 0,
-    "eol-last": ["error", "always"],
-    "flowtype/delimiter-dangle": ["error", "always-multiline"],
-    "indent": ["error", 2, {"SwitchCase":1}],
-    "key-spacing": ["error", {"beforeColon": false}],
-    "keyword-spacing": ["error", {"after": true, "before": true}],
     "no-console": 0,
-    "no-multi-spaces": ["error"],
-    "no-multiple-empty-lines": "error",
-    "object-curly-spacing": ["error", "never"],
     "prefer-const": "error",
     "quotes": ["error", "single", {"allowTemplateLiterals": true}],
     "semi": ["error", "never"],
-    "space-in-parens": ["error", "never"],
-    "space-infix-ops": ["error", {"int32Hint": false}],
-    "no-unused-vars": 0
+		"no-unused-vars": "warn",
+
+		"@typescript-eslint/explicit-function-return-type": 0,
+		"@typescript-eslint/no-unused-vars": 0
   },
   "globals": {
     "translations": false
