@@ -1,26 +1,36 @@
 {
-  "name": "translation-compiler",
-  "version": "1.0.0",
-  "main": "index.js",
-  "author": "Oskari Noppa <oskari.noppa@bolt.works>",
-  "license": "MIT",
-  "private": true,
-  "dependencies": {
-    "@babel/cli": "^7.4.3",
-    "@babel/core": "^7.4.3",
-    "flow-bin": "0.96.0",
-    "get-optional": "^2.0.3",
-    "loader-utils": "^1.2.3"
-  },
-  "devDependencies": {
-    "@babel/plugin-syntax-dynamic-import": "^7.2.0",
-    "@babel/plugin-transform-flow-strip-types": "^7.4.0",
-    "babel-eslint": "^10.0.1",
-    "babel-loader": "^8.0.5",
-    "babel-types": "^6.26.0",
-    "eslint": "^5.16.0",
-    "eslint-plugin-flowtype": "^3.6.1",
-    "webpack": "^4.30.0",
-    "webpack-cli": "^3.3.1"
-  }
+	"name": "translation-compiler",
+	"version": "1.0.0",
+	"main": "index.js",
+	"author": "Oskari Noppa <oskari.noppa@bolt.works>",
+	"license": "MIT",
+	"private": true,
+	"scripts": {
+		"build": "tsc --outDir ./dist --rootDir ./src src/index.ts",
+		"test": "webpack --config demo/webpack.config.js"
+	},
+	"dependencies": {
+		"@babel/cli": "^7.4.3",
+		"@babel/core": "^7.4.3",
+		"babel-types": "^6.26.0",
+		"loader-utils": "^1.2.3"
+	},
+	"devDependencies": {
+		"@babel/plugin-syntax-dynamic-import": "^7.2.0",
+		"@babel/plugin-transform-flow-strip-types": "^7.4.0",
+		"@types/loader-utils": "^1.1.3",
+		"@types/node": "^12.0.2",
+		"@typescript-eslint/eslint-plugin": "^1.9.0",
+		"@typescript-eslint/parser": "^1.9.0",
+		"babel-eslint": "^10.0.1",
+		"babel-loader": "^8.0.5",
+		"eslint": "^5.16.0",
+		"eslint-config-prettier": "^4.3.0",
+		"eslint-plugin-prettier": "^3.1.0",
+		"prettier": "^1.17.1",
+		"ts-loader": "^6.0.1",
+		"typescript": "^3.4.5",
+		"webpack": "^4.30.0",
+		"webpack-cli": "^3.3.1"
+	}
 }

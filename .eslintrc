@@ -1,40 +1,28 @@
 {
-  "root": true,
-  "extends": [
-    "eslint:recommended",
-    "plugin:flowtype/recommended"
-  ],
-  "env": {
-    "es6": true,
-    "node": true
-  },
-  "parser": "babel-eslint",
-  "plugins": [
-    "flowtype"
-  ],
-  "rules": {
-    "array-bracket-spacing": ["error", "never"],
-    "arrow-spacing": "error",
-    "comma-dangle": ["error", "always-multiline"],
-    "comma-spacing": "error",
-    "display-name": 0,
-    "eol-last": ["error", "always"],
-    "flowtype/delimiter-dangle": ["error", "always-multiline"],
-    "indent": ["error", 2, {"SwitchCase":1}],
-    "key-spacing": ["error", {"beforeColon": false}],
-    "keyword-spacing": ["error", {"after": true, "before": true}],
-    "no-console": 0,
-    "no-multi-spaces": ["error"],
-    "no-multiple-empty-lines": "error",
-    "object-curly-spacing": ["error", "never"],
-    "prefer-const": "error",
-    "quotes": ["error", "single", {"allowTemplateLiterals": true}],
-    "semi": ["error", "never"],
-    "space-in-parens": ["error", "never"],
-    "space-infix-ops": ["error", {"int32Hint": false}],
-    "no-unused-vars": 0
-  },
-  "globals": {
-    "translations": false
-  }
+	"root": true,
+	"plugins": ["@typescript-eslint", "prettier"],
+	"extends": ["plugin:@typescript-eslint/recommended", "prettier", "prettier/@typescript-eslint"],
+	"env": {
+		"es6": true,
+		"node": true
+	},
+	"parser": "@typescript-eslint/parser",
+	"rules": {
+		"no-console": 0,
+		"prefer-const": "error",
+		"quotes": ["error", "single", { "allowTemplateLiterals": true }],
+		"semi": ["error", "never"],
+		"no-unused-vars": 0,
+
+		"@typescript-eslint/explicit-function-return-type": 0,
+		"@typescript-eslint/no-unused-vars": "warn",
+		"@typescript-eslint/prefer-interface": 0,
+		"@typescript-eslint/explicit-member-accessibility": 0,
+		"@typescript-eslint/no-parameter-properties": 0,
+		"@typescript-eslint/no-use-before-define": 0,
+		"@typescript-eslint/no-explicit-any": 0
+	},
+	"globals": {
+		"translations": false
+	}
 }
