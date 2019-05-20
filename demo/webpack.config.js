@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 const path = require('path')
-const TranslationPlugin = require('../dist/index.js')
+const { TranslationPlugin } = require('../dist/index.js')
 const relative = (...p) => path.join(__dirname, ...p)
 
 module.exports = {
@@ -15,9 +15,9 @@ module.exports = {
 		filename: '[name].js',
 	},
 	plugins: [
-		// new TranslationPlugin({
-		// 	languages: ['en'],
-		// }),
+		new TranslationPlugin({
+			languages: ['en'],
+		}),
 	],
 	module: {
 		rules: [
@@ -31,5 +31,8 @@ module.exports = {
 				exclude: /[/\\]node_modules[/\\]/,
 			},
 		],
+	},
+	resolve: {
+		extensions: ['.ts', '.js'],
 	},
 }
