@@ -65,14 +65,18 @@ class TranslationPlugin {
 		// 	factory.hooks.beforeResolve.tap(pluginName, resolverPlugin)
 		// 	factory.hooks.parser.for('javascript/auto').tap(pluginName, parserPlugin)
 		// })
-		compiler.hooks.thisCompilation.tap(pluginName, function(factory: any) {
-			console.log(Object.keys(factory.hooks))
-			factory.hooks.parser.for('javascript/auto').tap(pluginName, function(parser: any) {
-				console.log('parser')
-				parser.hooks.evaluate.for('CallExpression').tap(pluginName, function(...args) {
-					console.log('expr', args, this)
-				})
+		compiler.hooks.compilation.tap(pluginName, function(factory: any) {
+			factory.hooks.dependencyReference.tap(pluginName, (ref: any, oth: any) => {
+				if (isTranslationFile(ref.module.resource, options)) {
+					console.log(ref.importedNames, Object.keys(ref.module))
+				}
 			})
+			// factory.hooks.parser.for('javascript/auto').tap(pluginName, function(parser: any) {
+			// 	console.log('parser')
+			// 	parser.hooks.evaluate.for('CallExpression').tap(pluginName, function(...args) {
+			// 		console.log('expr', args, this)
+			// 	})
+			// })
 		})
 
 		function parserPlugin(parser: any) {
