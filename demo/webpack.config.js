@@ -17,6 +17,9 @@ module.exports = {
 	plugins: [
 		new TranslationPlugin({
 			languages: ['en'],
+			translationFiles: {
+				[relative('./compiled-translations')]: /translations(?:\.ts)?$/,
+			},
 		}),
 	],
 	module: {
@@ -26,6 +29,11 @@ module.exports = {
 				use: [
 					{
 						loader: 'ts-loader',
+						options: {
+							compilerOptions: {
+								module: 'es2015',
+							},
+						},
 					},
 				],
 				exclude: /[/\\]node_modules[/\\]/,

@@ -2,15 +2,59 @@ import * as loaderUtils from 'loader-utils'
 import * as path from 'path'
 import VirtualStats from './VirtualStats.js'
 import { Compiler } from 'webpack'
+import * as _ from 'lodash'
 
 const pluginName = 'TranslationPlugin'
 
+type FilePath = string
+type FilePathPredicateFn = (path: FilePath) => boolean
+type FilePathPredicate = FilePathPredicateFn | RegExp
+
 export type PluginOptions = {
 	languages: readonly string[]
+	translationFiles: { [key in FilePath]: FilePathPredicate }
+}
+
+type NormalizedPluginOptions = {
+	languages: readonly string[]
+	translationFiles: { [key in FilePath]: FilePathPredicateFn }
+}
+
+function normalizePluginOptions(options: PluginOptions): NormalizedPluginOptions {
+	const { languages, translationFiles } = options
+	if (_.isEmpty(languages) || !languages.every(_.isString)) {
+		const actual = _.truncate(String(languages), { length: 20 })
+		throw new Error(`Expected options.languages to be list of strings but it was ${actual}`)
+	}
+	function raiseInvalidTranslationFilesError(): any {
+		const actual = _.truncate(String(translationFiles), { length: 20 })
+		throw new Error(
+			`Expected options.translationFiles to be map from file path to predicate but it was ${actual}`,
+		)
+	}
+	if (_.isEmpty(translationFiles)) raiseInvalidTranslationFilesError()
+	return {
+		languages,
+		translationFiles: _.mapValues(
+			translationFiles,
+			(pred: FilePathPredicate): FilePathPredicateFn => {
+				if (_.isFunction(pred)) return pred
+				if (_.isRegExp(pred)) return (p: FilePath) => pred.test(p)
+				return raiseInvalidTranslationFilesError()
+			},
+		),
+	}
+}
+
+function isTranslationFile(path: FilePath, options: NormalizedPluginOptions): boolean {
+	return Object.values(options.translationFiles).some(fn => fn(path))
 }
 
 class TranslationPlugin {
-	constructor(private options: PluginOptions) {}
+	private options: NormalizedPluginOptions
+	constructor(options: PluginOptions) {
+		this.options = normalizePluginOptions(options)
+	}
 
 	apply(compiler: Compiler) {
 		const { options } = this
@@ -19,26 +63,18 @@ class TranslationPlugin {
 		compiler.hooks.normalModuleFactory.tap(pluginName, factory => {
 			console.log('module factory')
 			factory.hooks.beforeResolve.tap(pluginName, resolverPlugin)
-			factory.hooks.parser
-				.for('javascript/auto')
-				.tap(pluginName, parserPlugin)
+			factory.hooks.parser.for('javascript/auto').tap(pluginName, parserPlugin)
 		})
 
-		function parserPlugin(parser: any, options: any) {
+		function parserPlugin(parser: any) {
 			console.log('parser plugin')
-			parser.hooks.import.tap(
-				pluginName,
-				(statement: any, source: any) => {
-					const sourcePath = path.join(
-						parser.state.current.context,
-						source,
-					)
-					console.log('hook', sourcePath)
-					if (!sourcePath.includes('translations.js')) {
-						// console.log(sourcePath, statement.__proto__)
-					}
-				},
-			)
+			// TODO: CommonJS requires
+			parser.hooks.import.tap(pluginName, (statement: any, source: any) => {
+				const sourcePath = path.join(parser.state.current.context, source)
+				if (isTranslationFile(sourcePath, options)) {
+					console.log('is translation file')
+				}
+			})
 		}
 
 		function resolverPlugin(req: any) {
