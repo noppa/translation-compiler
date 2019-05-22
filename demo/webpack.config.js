@@ -6,7 +6,7 @@ const relative = (...p) => path.join(__dirname, ...p)
 module.exports = {
 	mode: 'development',
 	entry: {
-		demo: relative('demo.ts'),
+		demo: relative('index.ts'),
 	},
 	target: 'web',
 	devtool: 'source-map',

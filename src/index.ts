@@ -60,10 +60,19 @@ class TranslationPlugin {
 		const { options } = this
 		const { context } = compiler
 		const fs = compiler.inputFileSystem
-		compiler.hooks.normalModuleFactory.tap(pluginName, factory => {
-			console.log('module factory')
-			factory.hooks.beforeResolve.tap(pluginName, resolverPlugin)
-			factory.hooks.parser.for('javascript/auto').tap(pluginName, parserPlugin)
+		// compiler.hooks.normalModuleFactory.tap(pluginName, factory => {
+		// 	console.log('module factory')
+		// 	factory.hooks.beforeResolve.tap(pluginName, resolverPlugin)
+		// 	factory.hooks.parser.for('javascript/auto').tap(pluginName, parserPlugin)
+		// })
+		compiler.hooks.thisCompilation.tap(pluginName, function(factory: any) {
+			console.log(Object.keys(factory.hooks))
+			factory.hooks.parser.for('javascript/auto').tap(pluginName, function(parser: any) {
+				console.log('parser')
+				parser.hooks.evaluate.for('CallExpression').tap(pluginName, function(...args) {
+					console.log('expr', args, this)
+				})
+			})
 		})
 
 		function parserPlugin(parser: any) {
@@ -72,9 +81,14 @@ class TranslationPlugin {
 			parser.hooks.import.tap(pluginName, (statement: any, source: any) => {
 				const sourcePath = path.join(parser.state.current.context, source)
 				if (isTranslationFile(sourcePath, options)) {
-					console.log('is translation file')
+					console.log('is translation file', sourcePath, statement)
 				}
 			})
+			parser.hooks.evaluate
+				.for('CallExpression')
+				.tap(pluginName, (objectExpression: string, args: any, b: any) => {
+					console.log('call', objectExpression, args, b)
+				})
 		}
 
 		function resolverPlugin(req: any) {
@@ -113,10 +127,6 @@ class TranslationPlugin {
 					birthtime: 1,
 				}),
 			])
-		}
-
-		function compilePlugin(req: any) {
-			console.log('compile plugin', req)
 		}
 	}
 }
