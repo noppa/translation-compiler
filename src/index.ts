@@ -61,7 +61,6 @@ class TranslationPlugin {
 		const { context } = compiler
 		const fs = compiler.inputFileSystem
 		compiler.hooks.normalModuleFactory.tap(pluginName, factory => {
-			console.log('module factory')
 			factory.hooks.beforeResolve.tap(pluginName, resolverPlugin)
 			// factory.hooks.parser.for('javascript/auto').tap(pluginName, parserPlugin)
 		})
@@ -100,9 +99,7 @@ class TranslationPlugin {
 		}
 
 		function resolverPlugin(req: any) {
-			console.log('resolver plugin', req.request)
-			if (!req.request.includes('fi.js')) return
-			// console.log(req)
+			if (!req.request.includes('fi.js') || req.context.includes('node_modules')) return
 			const modulePath = compiler.context + '/demo/fi.js'
 			console.log(modulePath)
 			const contents = `
