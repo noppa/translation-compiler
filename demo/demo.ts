@@ -1,3 +1,5 @@
-import * as translations from './translations'
+import t from './translate-runtime'
 
-console.log(translations.foo())
+setTimeout(() => {
+	console.log(t('foo'))
+}, 2000)

@@ -4,7 +4,7 @@ const { TranslationPlugin } = require('../dist/index.js')
 const relative = (...p) => path.join(__dirname, ...p)
 
 module.exports = {
-	mode: 'development',
+	mode: 'production',
 	entry: {
 		demo: relative('index.ts'),
 	},

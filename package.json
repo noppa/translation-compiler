@@ -7,7 +7,7 @@
 	"private": true,
 	"scripts": {
 		"build": "tsc --outDir ./dist --rootDir ./src src/index.ts",
-		"test": "webpack --config demo/webpack.config.js"
+		"test": "rm demo/dist/* && webpack --config demo/webpack.config.js"
 	},
 	"dependencies": {
 		"@babel/cli": "^7.4.3",

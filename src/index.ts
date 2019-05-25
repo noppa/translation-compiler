@@ -60,24 +60,28 @@ class TranslationPlugin {
 		const { options } = this
 		const { context } = compiler
 		const fs = compiler.inputFileSystem
-		// compiler.hooks.normalModuleFactory.tap(pluginName, factory => {
-		// 	console.log('module factory')
-		// 	factory.hooks.beforeResolve.tap(pluginName, resolverPlugin)
-		// 	factory.hooks.parser.for('javascript/auto').tap(pluginName, parserPlugin)
-		// })
-		compiler.hooks.compilation.tap(pluginName, function(factory: any) {
-			factory.hooks.dependencyReference.tap(pluginName, (ref: any, oth: any) => {
-				if (isTranslationFile(ref.module.resource, options)) {
-					console.log(ref.importedNames, Object.keys(ref.module))
-				}
-			})
-			// factory.hooks.parser.for('javascript/auto').tap(pluginName, function(parser: any) {
-			// 	console.log('parser')
-			// 	parser.hooks.evaluate.for('CallExpression').tap(pluginName, function(...args) {
-			// 		console.log('expr', args, this)
-			// 	})
-			// })
+		compiler.hooks.normalModuleFactory.tap(pluginName, factory => {
+			console.log('module factory')
+			factory.hooks.beforeResolve.tap(pluginName, resolverPlugin)
+			// factory.hooks.parser.for('javascript/auto').tap(pluginName, parserPlugin)
 		})
+		// compiler.hooks.compilation.tap(pluginName, function(factory: any) {
+		// 	// factory.hooks.dependencyReference.tap(pluginName, (ref: any, oth: any) => {
+		// 	// 	if (isTranslationFile(ref.module.resource, options)) {
+		// 	// 		console.log(ref.importedNames, Object.keys(ref.module))
+		// 	// 	}
+		// 	// })
+		// 	factory.hooks.optimizeDependenciesAdvanced.tap(pluginName, (...args) => {
+		// 		console.log('opt', args)
+		// 	})
+
+		// 	// factory.hooks.parser.for('javascript/auto').tap(pluginName, function(parser: any) {
+		// 	// 	console.log('parser')
+		// 	// 	parser.hooks.evaluate.for('CallExpression').tap(pluginName, function(...args) {
+		// 	// 		console.log('expr', args, this)
+		// 	// 	})
+		// 	// })
+		// })
 
 		function parserPlugin(parser: any) {
 			console.log('parser plugin')
@@ -99,15 +103,16 @@ class TranslationPlugin {
 			console.log('resolver plugin', req.request)
 			if (!req.request.includes('fi.js')) return
 			// console.log(req)
-			const modulePath = compiler.context + '/test/fi.js'
-			// console.log(modulePath)
+			const modulePath = compiler.context + '/demo/fi.js'
+			console.log(modulePath)
 			const contents = `
-        export default function translate(key, arg) {
-          const createTranslation = translations.get(key);
-          if (createTranslation) return createTranslation(arg);
-        }
-        const translations = new Map();
-        translations.set('test', 'foobar');
+				import {
+					foo
+				} from './translations'
+
+				export {
+					foo
+				}
 			`
 
 			// Hack to allow access to fs private apis
