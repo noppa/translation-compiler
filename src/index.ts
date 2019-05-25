@@ -107,11 +107,13 @@ class TranslationPlugin {
 			console.log(modulePath)
 			const contents = `
 				import {
-					foo
+					bar
 				} from './translations'
 
+				const fi$bar = bar.deep.prop.fi
+
 				export {
-					foo
+					fi$bar as bar
 				}
 			`
 

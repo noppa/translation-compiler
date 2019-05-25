@@ -1,6 +1,6 @@
 const fi = import('./fi.js')
 
-/*#__PURE__*/
-export default function t(key) {
-	return fi[key]
+export default function t(key, arg) {
+	const t = fi[key]
+	return (typeof t === 'function' ? t(arg) : t) + ''
 }
