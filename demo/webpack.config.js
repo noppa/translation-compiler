@@ -29,6 +29,7 @@ module.exports = {
 				use: [
 					{
 						loader: 'babel-loader',
+						extensions: ['.ts', '.js'],
 					},
 				],
 				exclude: /[/\\]node_modules[/\\]/,

@@ -6,6 +6,10 @@ type VisitorState = {}
 export default function(options: any): Babel.PluginObj<VisitorState> {
 	console.log('babel plugin')
 	return {
-		visitor: {},
+		visitor: {
+			ExportDefaultDeclaration(path, state) {
+				console.log('export default', path, state)
+			},
+		},
 	}
 }
