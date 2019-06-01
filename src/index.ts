@@ -107,7 +107,7 @@ class TranslationPlugin {
 					bar
 				} from './translations'
 
-				const fi$bar = bar.deep.prop.fi
+				const fi$bar = bar
 
 				export {
 					fi$bar as bar
