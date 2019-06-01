@@ -1,4 +1,4 @@
-const fi = import('./fi.js')
+// const fi = import('./fi.js')
 
 export default function t(key, arg) {
 	const t = fi[key]

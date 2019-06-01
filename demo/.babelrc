@@ -1,0 +1,4 @@
+{
+	"presets": ["@babel/preset-typescript"],
+	"plugins": ["../dist/babel-plugin/index.js"]
+}
