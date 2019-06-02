@@ -6,14 +6,15 @@ type VisitorState = {
 	filename: string
 }
 
-export default function(options: any): Babel.PluginObj<VisitorState> {
-	console.log('babel plugin')
+export default function(): Babel.PluginObj<VisitorState> {
 	return {
 		name: 'translation-compiler',
 		visitor: {
 			ExportDefaultDeclaration(path: NodePath, state: VisitorState) {
-				console.log('hello')
+				console.log('hello 2')
 			},
 		},
 	}
 }
+
+class Foo {}

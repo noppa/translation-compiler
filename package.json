@@ -6,9 +6,9 @@
 	"license": "MIT",
 	"private": true,
 	"scripts": {
-		"build": "tsc --outDir ./dist --rootDir -p ./",
+		"build": "tsc --build tsconfig.json",
 		"test": "rm demo/dist/* ; webpack --config demo/webpack.config.js",
-		"dev": "node --inspect test/debugging/interactive.js"
+		"dev": "node --inspect-brk test/debugging/interactive.js"
 	},
 	"dependencies": {
 		"@babel/cli": "^7.4.3",
