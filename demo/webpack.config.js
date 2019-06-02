@@ -29,7 +29,9 @@ module.exports = {
 				use: [
 					{
 						loader: 'babel-loader',
-						extensions: ['.ts', '.js'],
+						options: {
+							...require('./babel.config.js'),
+						},
 					},
 				],
 				exclude: /[/\\]node_modules[/\\]/,
