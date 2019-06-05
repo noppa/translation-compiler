@@ -1,6 +1,6 @@
 import { t } from '../src/runtime'
 
-const a = {
+export default {
 	foo: t((a: { x: number }) => {
 		return {
 			fi: 'Foo fi' + a.x,
@@ -8,5 +8,3 @@ const a = {
 		}
 	}),
 }
-
-export default a
