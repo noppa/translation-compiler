@@ -22,19 +22,32 @@ export default function(): Babel.PluginObj<VisitorState> {
 					)
 				}
 
-				for (const prop of declaration.properties) {
-					if (t.isObjectProperty(prop)) {
-						visitTranslationObjectProperty(prop)
-					} else {
-						path.buildCodeFrameError(
-							'Translation object keys can only be translation definitions, declared with t(...),' +
-								' or nested objects containing the translation objects.',
-						)
-					}
-				}
+				visitObjectDeclarationProperties(declaration, path)
 			},
 		},
 	}
 }
 
-function visitTranslationObjectProperty(node: t.ObjectProperty) {}
+function visitObjectDeclarationProperties(
+	declaration: t.ObjectExpression,
+	path: Babel.NodePath<any>,
+) {
+	for (const prop of declaration.properties) {
+		if (t.isObjectProperty(prop)) {
+			// TODO: Giving the original path here will make errors point to the wrong place.
+			// Should be path of the property.
+			visitTranslationObjectProperty(prop, path)
+		} else {
+			path.buildCodeFrameError(
+				'Translation object keys can only be translation definitions, declared with t(...),' +
+					' or nested objects containing the translation objects.',
+			)
+		}
+	}
+}
+
+function visitTranslationObjectProperty(node: t.ObjectProperty, path: Babel.NodePath<any>) {
+	if (t.isObjectExpression(node)) {
+		return visitObjectDeclarationProperties(node, path)
+	}
+}
