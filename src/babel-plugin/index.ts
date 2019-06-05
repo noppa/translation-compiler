@@ -12,33 +12,28 @@ export default function(): Babel.PluginObj<VisitorState> {
 		name: 'translation-compiler',
 		visitor: {
 			ExportDefaultDeclaration(path: NodePath<t.ExportDefaultDeclaration>, state: VisitorState) {
-				const { node } = path
-				const { declaration } = node
+				const declaration = path.get('declaration')
 
-				if (!t.isObjectExpression(declaration)) {
+				if (!t.isObjectExpression(declaration.node)) {
 					throw path.buildCodeFrameError(
 						'Translation file must have a default expression that is an object containing' +
 							'the translation keys.',
 					)
 				}
-
-				visitObjectDeclarationProperties(declaration, path)
+				const properties = declaration.get('properties') as NodePath[]
+				visitObjectDeclarationProperties(properties)
+				// Babel.traverse(properties)
 			},
 		},
 	}
 }
 
-function visitObjectDeclarationProperties(
-	declaration: t.ObjectExpression,
-	path: Babel.NodePath<any>,
-) {
-	for (const prop of declaration.properties) {
+function visitObjectDeclarationProperties(properties: NodePath[]) {
+	for (const prop of properties) {
 		if (t.isObjectProperty(prop)) {
-			// TODO: Giving the original path here will make errors point to the wrong place.
-			// Should be path of the property.
-			visitTranslationObjectProperty(prop, path)
+			visitTranslationObject(prop.get('value'))
 		} else {
-			path.buildCodeFrameError(
+			prop.buildCodeFrameError(
 				'Translation object keys can only be translation definitions, declared with t(...),' +
 					' or nested objects containing the translation objects.',
 			)
@@ -46,8 +41,9 @@ function visitObjectDeclarationProperties(
 	}
 }
 
-function visitTranslationObjectProperty(node: t.ObjectProperty, path: Babel.NodePath<any>) {
-	if (t.isObjectExpression(node)) {
-		return visitObjectDeclarationProperties(node, path)
+function visitTranslationObject(objectPropertyValue) {
+	if (t.isObjectExpression(objectPropertyValue.node)) {
+		const properties = objectPropertyValue.get('properties') as NodePath[]
+		return visitObjectDeclarationProperties(properties)
 	}
 }
