@@ -1,6 +1,7 @@
 import { NodePath } from '@babel/traverse'
 import * as t from '@babel/types'
 import * as Babel from '@babel/core'
+import template from '@babel/template'
 import UnexpectedAstNodeException from './exception/unexpectedAstNode'
 import propertyPathToIdentifier from '../core/property-path-to-identifier'
 
@@ -46,13 +47,23 @@ function visitObjectDeclarationProperties(properties: NodePath[], path: string[]
 	}
 }
 
+const exportStatement = template(`
+	export const NAME = VALUE
+`)
+
 function visitTranslationObject(objectPropertyValue: NodePath<t.Node>, path: string[]) {
 	if (objectPropertyValue.isObjectExpression()) {
 		const properties = objectPropertyValue.get('properties') as NodePath[]
 		return visitObjectDeclarationProperties(properties, path)
 	}
 	if (objectPropertyValue.isCallExpression()) {
-		const exportableId = propertyPathToIdentifier(path)
-		console.log(exportableId)
+		// TODO: Other languages
+		const exportableId = propertyPathToIdentifier(path, 'fi')
+		const callNode = objectPropertyValue.node
+		const globalExportStatement = exportStatement({
+			NAME: exportableId,
+			VALUE: t.callExpression(callNode.callee, callNode.arguments),
+		}) as t.Node
+		program.pushContainer('body', globalExportStatement)
 	}
 }

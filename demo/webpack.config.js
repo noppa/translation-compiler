@@ -4,7 +4,7 @@ const path = require('path')
 const relative = (...p) => path.join(__dirname, ...p)
 
 module.exports = {
-	mode: 'production',
+	mode: 'development',
 	entry: {
 		demo: relative('index.ts'),
 	},
