@@ -126,7 +126,7 @@ function unwrapTranslationFunction(
 		'Translation factory function must return' +
 		` a translation object with ${expectedTranslationObjectMsg}.`
 
-	const body = translationExpr.get('body')
+	const body: NodePath<t.Node> = translationExpr.get('body')
 	if (body.isBlockStatement()) {
 		const returnStatements: NodePath<t.ReturnStatement>[] = body
 			.get('body')
@@ -142,8 +142,10 @@ function unwrapTranslationFunction(
 
 			unwrapTranslationObject(arg, language)
 		}
+	} else if (body.isObjectExpression()) {
+		unwrapTranslationObject(body, language)
 	} else {
-		console.log('woop not block')
+		throw body.buildCodeFrameError(returnTypeErrorMsg)
 	}
 }
 
