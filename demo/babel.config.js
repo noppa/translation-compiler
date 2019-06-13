@@ -1,7 +1,15 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 const path = require('path')
+const translationCompiler = path.resolve(__dirname, '../dist/babel-plugin/index.js')
 
 module.exports = {
 	presets: ['@babel/preset-typescript'],
-	plugins: [path.resolve(__dirname, '../dist/babel-plugin/index.js')],
+	plugins: [
+		[
+			translationCompiler,
+			{
+				translationFiles: [path.resolve(__dirname, './translations.ts')],
+			},
+		],
+	],
 }

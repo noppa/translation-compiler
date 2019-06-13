@@ -4,8 +4,14 @@ import * as Babel from '@babel/core'
 import propertyPathToIdentifier from '../core/property-path-to-identifier'
 import annotateAsPure from '@babel/helper-annotate-as-pure'
 
+type Options = {
+	translationFiles: string[]
+}
+
 type VisitorState = {
 	filename: string
+	opts: Options
+	cwd: any
 }
 
 const declarations: t.ExportNamedDeclaration[] = []
@@ -16,7 +22,8 @@ export default function(): Babel.PluginObj<VisitorState> {
 	return {
 		name: 'translation-compiler',
 		visitor: {
-			ExportDefaultDeclaration(path: NodePath<t.ExportDefaultDeclaration>) {
+			ExportDefaultDeclaration(path: NodePath<t.ExportDefaultDeclaration>, state: VisitorState) {
+				if (!isTranslationFile(state)) return
 				const declaration = path.get('declaration')
 
 				if (!t.isObjectExpression(declaration.node)) {
@@ -29,11 +36,17 @@ export default function(): Babel.PluginObj<VisitorState> {
 				visitObjectDeclarationProperties(properties, [])
 				path.replaceWithMultiple(declarations)
 			},
-			// CallExpression(path) {
-			// 	annotateAsPure(path)
-			// },
+			CallExpression(path, state) {
+				if (!isTranslationFile(state)) return
+				annotateAsPure(path)
+			},
 		},
 	}
+}
+
+function isTranslationFile(state: VisitorState): boolean {
+	// TODO: More flexible way to define translation files.
+	return state.opts.translationFiles.includes(state.filename)
 }
 
 function visitObjectDeclarationProperties(properties: NodePath[], path: string[]) {
