@@ -8,6 +8,8 @@ type VisitorState = {
 }
 
 const declarations: t.ExportNamedDeclaration[] = []
+// TODO: Take from config.
+const languages = ['fi']
 
 export default function(): Babel.PluginObj<VisitorState> {
 	return {
@@ -59,23 +61,43 @@ function visitTranslationObject(objectPropertyValue: NodePath<t.Node>, path: str
 		const exportableId = propertyPathToIdentifier(path, 'fi')
 		const callNode = objectPropertyValue.node
 		const translationExpr = callNode.arguments[0]
-		if (
-			!(
-				t.isObjectExpression(translationExpr) ||
-				t.isFunctionExpression(translationExpr) ||
-				t.isArrowFunctionExpression(translationExpr)
-			)
-		) {
+		if (t.isObjectExpression(translationExpr) || t.isFunctionExpression(translationExpr)) {
+		} else if (t.isArrowFunctionExpression(translationExpr)) {
+		} else {
 			throw objectPropertyValue.buildCodeFrameError(
 				'Translation factory function t(..) should be called with' +
 					' a translation object or a function that returns the object.',
 			)
 		}
+
+		// Move translation to an export declaration.
+		// The top level default export will be replaced with these later.
 		declarations.push(
 			t.exportNamedDeclaration(
 				t.variableDeclaration('const', [t.variableDeclarator(exportableId, translationExpr)]),
 				[],
 			),
 		)
+	}
+}
+
+function unwrapTranslationObject(translationExpr: t.ObjectExpression, language: string) {
+	const prop = translationExpr.properties.find(prop => {
+		if (prop.type !== 'ObjectProperty') {
+			// TODO: buildCodeFrameError
+			throw new Error('Translation object properties should be simple {language: string} pairings.')
+		}
+		const { key } = prop
+		if (!t.isIdentifier(key)) {
+			// TODO: buildCodeFrameError
+			throw new Error('Translation object properties should be simple {language: string} pairings.')
+		}
+
+		return key.name === language
+	})
+	if (!prop) {
+		// TODO: buildCodeFrameError
+		// TODO: Allow omitting languages with predefined default languages
+		throw new Error(`Can't find language ${language} from translation keys.`)
 	}
 }
