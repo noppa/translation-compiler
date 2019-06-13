@@ -1,19 +1,19 @@
 import { NodePath } from '@babel/traverse'
 import * as t from '@babel/types'
 import * as Babel from '@babel/core'
-import template from '@babel/template'
-import UnexpectedAstNodeException from './exception/unexpectedAstNode'
 import propertyPathToIdentifier from '../core/property-path-to-identifier'
 
 type VisitorState = {
 	filename: string
 }
 
+const declarations: t.ExportNamedDeclaration[] = []
+
 export default function(): Babel.PluginObj<VisitorState> {
 	return {
 		name: 'translation-compiler',
 		visitor: {
-			ExportDefaultDeclaration(path: NodePath<t.ExportDefaultDeclaration>, state: VisitorState) {
+			ExportDefaultDeclaration(path: NodePath<t.ExportDefaultDeclaration>) {
 				const declaration = path.get('declaration')
 
 				if (!t.isObjectExpression(declaration.node)) {
@@ -24,6 +24,7 @@ export default function(): Babel.PluginObj<VisitorState> {
 				}
 				const properties = declaration.get('properties') as NodePath[]
 				visitObjectDeclarationProperties(properties, [])
+				path.replaceWithMultiple(declarations)
 			},
 		},
 	}
@@ -47,10 +48,6 @@ function visitObjectDeclarationProperties(properties: NodePath[], path: string[]
 	}
 }
 
-const exportStatement = template(`
-	export const NAME = VALUE
-`)
-
 function visitTranslationObject(objectPropertyValue: NodePath<t.Node>, path: string[]) {
 	if (objectPropertyValue.isObjectExpression()) {
 		const properties = objectPropertyValue.get('properties') as NodePath[]
@@ -60,10 +57,13 @@ function visitTranslationObject(objectPropertyValue: NodePath<t.Node>, path: str
 		// TODO: Other languages
 		const exportableId = propertyPathToIdentifier(path, 'fi')
 		const callNode = objectPropertyValue.node
-		const globalExportStatement = exportStatement({
-			NAME: exportableId,
-			VALUE: t.callExpression(callNode.callee, callNode.arguments),
-		}) as t.Node
-		program.pushContainer('body', globalExportStatement)
+		declarations.push(
+			t.exportNamedDeclaration(
+				t.variableDeclaration('const', [
+					t.variableDeclarator(exportableId, t.callExpression(callNode.callee, callNode.arguments)),
+				]),
+				[],
+			),
+		)
 	}
 }
