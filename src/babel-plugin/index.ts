@@ -40,8 +40,8 @@ function visitObjectDeclarationProperties(properties: NodePath[], path: string[]
 			const newPath = [key.name, ...path]
 			visitTranslationObject(prop.get('value') as NodePath<t.Node>, newPath)
 		} else {
-			prop.buildCodeFrameError(
-				'Translation object keys can only be translation definitions, declared with t(...),' +
+			throw prop.buildCodeFrameError(
+				'Translation object keys can only be translation definitions, declared with t(..),' +
 					' or nested objects containing the translation objects.',
 			)
 		}
@@ -53,15 +53,27 @@ function visitTranslationObject(objectPropertyValue: NodePath<t.Node>, path: str
 		const properties = objectPropertyValue.get('properties') as NodePath[]
 		return visitObjectDeclarationProperties(properties, path)
 	}
+	// TODO: Check that it's the right kind of call expression.
 	if (objectPropertyValue.isCallExpression()) {
-		// TODO: Other languages
+		// TODO: Other languages.
 		const exportableId = propertyPathToIdentifier(path, 'fi')
 		const callNode = objectPropertyValue.node
+		const translationExpr = callNode.arguments[0]
+		if (
+			!(
+				t.isObjectExpression(translationExpr) ||
+				t.isFunctionExpression(translationExpr) ||
+				t.isArrowFunctionExpression(translationExpr)
+			)
+		) {
+			throw objectPropertyValue.buildCodeFrameError(
+				'Translation factory function t(..) should be called with' +
+					' a translation object or a function that returns the object.',
+			)
+		}
 		declarations.push(
 			t.exportNamedDeclaration(
-				t.variableDeclaration('const', [
-					t.variableDeclarator(exportableId, t.callExpression(callNode.callee, callNode.arguments)),
-				]),
+				t.variableDeclaration('const', [t.variableDeclarator(exportableId, translationExpr)]),
 				[],
 			),
 		)
