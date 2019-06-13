@@ -13,6 +13,7 @@
 	"dependencies": {
 		"@babel/cli": "^7.4.3",
 		"@babel/core": "^7.4.3",
+		"@babel/helper-annotate-as-pure": "^7.0.0",
 		"babel-types": "^6.26.0",
 		"loader-utils": "^1.2.3",
 		"lodash": "^4.17.11"

@@ -2,6 +2,7 @@ import { NodePath } from '@babel/traverse'
 import * as t from '@babel/types'
 import * as Babel from '@babel/core'
 import propertyPathToIdentifier from '../core/property-path-to-identifier'
+import annotateAsPure from '@babel/helper-annotate-as-pure'
 
 type VisitorState = {
 	filename: string
@@ -28,6 +29,9 @@ export default function(): Babel.PluginObj<VisitorState> {
 				visitObjectDeclarationProperties(properties, [])
 				path.replaceWithMultiple(declarations)
 			},
+			// CallExpression(path) {
+			// 	annotateAsPure(path)
+			// },
 		},
 	}
 }
@@ -58,46 +62,91 @@ function visitTranslationObject(objectPropertyValue: NodePath<t.Node>, path: str
 	// TODO: Check that it's the right kind of call expression.
 	if (objectPropertyValue.isCallExpression()) {
 		// TODO: Other languages.
-		const exportableId = propertyPathToIdentifier(path, 'fi')
-		const callNode = objectPropertyValue.node
-		const translationExpr = callNode.arguments[0]
-		if (t.isObjectExpression(translationExpr) || t.isFunctionExpression(translationExpr)) {
-		} else if (t.isArrowFunctionExpression(translationExpr)) {
-		} else {
-			throw objectPropertyValue.buildCodeFrameError(
-				'Translation factory function t(..) should be called with' +
-					' a translation object or a function that returns the object.',
+		const translationExpr = objectPropertyValue.get('arguments')[0]
+
+		for (const language of languages) {
+			const exportableId = propertyPathToIdentifier(path, 'fi')
+			if (translationExpr.isArrowFunctionExpression() || translationExpr.isFunctionExpression()) {
+				unwrapTranslationFunction(translationExpr, language)
+			} else if (translationExpr.isObjectExpression()) {
+				unwrapTranslationObject(translationExpr, language)
+			} else {
+				throw objectPropertyValue.buildCodeFrameError(
+					'Translation factory function t(..) should be called with' +
+						' a translation object or a function that returns the object.',
+				)
+			}
+
+			// Move translation to an export declaration.
+			// The top level default export will be replaced with these later.
+			declarations.push(
+				t.exportNamedDeclaration(
+					t.variableDeclaration('const', [
+						t.variableDeclarator(exportableId, translationExpr.node),
+					]),
+					[],
+				),
 			)
 		}
-
-		// Move translation to an export declaration.
-		// The top level default export will be replaced with these later.
-		declarations.push(
-			t.exportNamedDeclaration(
-				t.variableDeclaration('const', [t.variableDeclarator(exportableId, translationExpr)]),
-				[],
-			),
-		)
 	}
 }
 
-function unwrapTranslationObject(translationExpr: t.ObjectExpression, language: string) {
-	const prop = translationExpr.properties.find(prop => {
-		if (prop.type !== 'ObjectProperty') {
-			// TODO: buildCodeFrameError
-			throw new Error('Translation object properties should be simple {language: string} pairings.')
+const expectedTranslationObjectMsg =
+	'simple object describing {language: "translation string"} pairings'
+
+function unwrapTranslationObject(translationExpr: NodePath<t.ObjectExpression>, language: string) {
+	const prop = translationExpr.get('properties').find(prop => {
+		const keysShouldBeSimpleErrorMsg = `Translation object properties should be ${expectedTranslationObjectMsg}.`
+		if (!prop.isObjectProperty()) {
+			throw prop.buildCodeFrameError(keysShouldBeSimpleErrorMsg)
 		}
-		const { key } = prop
-		if (!t.isIdentifier(key)) {
-			// TODO: buildCodeFrameError
-			throw new Error('Translation object properties should be simple {language: string} pairings.')
+		const key = prop.get('key')
+		if (Array.isArray(key) || !key.isIdentifier()) {
+			// TODO: Should use `key` to build the frame.
+			throw prop.buildCodeFrameError(keysShouldBeSimpleErrorMsg)
 		}
 
-		return key.name === language
+		return key.node.name === language
 	})
 	if (!prop) {
-		// TODO: buildCodeFrameError
 		// TODO: Allow omitting languages with predefined default languages
-		throw new Error(`Can't find language ${language} from translation keys.`)
+		throw translationExpr.buildCodeFrameError(
+			`Can't find language ${language} from translation keys.`,
+		)
 	}
+	const value = prop.get('value') as NodePath<t.Node>
+	translationExpr.replaceWith(value)
+}
+
+function unwrapTranslationFunction(
+	translationExpr: NodePath<t.FunctionExpression> | NodePath<t.ArrowFunctionExpression>,
+	language: string,
+) {
+	const returnTypeErrorMsg =
+		'Translation factory function must return' +
+		` a translation object with ${expectedTranslationObjectMsg}.`
+
+	const body = translationExpr.get('body')
+	if (body.isBlockStatement()) {
+		const returnStatements: NodePath<t.ReturnStatement>[] = body
+			.get('body')
+			.filter(isPathReturnStatement)
+		if (!returnStatements.length) {
+			throw body.buildCodeFrameError(returnTypeErrorMsg)
+		}
+		for (const rs of returnStatements) {
+			const arg = rs.get('argument')
+			if (!arg.isObjectExpression()) {
+				throw arg.buildCodeFrameError(returnTypeErrorMsg)
+			}
+
+			unwrapTranslationObject(arg, language)
+		}
+	} else {
+		console.log('woop not block')
+	}
+}
+
+function isPathReturnStatement(path: NodePath<t.Statement>): path is NodePath<t.ReturnStatement> {
+	return path.isReturnStatement()
 }
