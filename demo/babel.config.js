@@ -8,7 +8,7 @@ module.exports = {
 		[
 			translationCompiler,
 			{
-				translationFiles: [path.resolve(__dirname, './translations.ts')],
+				translationFiles: [/translation-compiler\/demo\/translations/],
 			},
 		],
 	],

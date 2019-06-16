@@ -1,11 +1,12 @@
 import { NodePath } from '@babel/traverse'
 import * as t from '@babel/types'
 import * as Babel from '@babel/core'
-import propertyPathToIdentifier from '../core/property-path-to-identifier'
 import annotateAsPure from '@babel/helper-annotate-as-pure'
+import { resolve as resolvePath, dirname } from 'path'
+import propertyPathToIdentifier from '../core/property-path-to-identifier'
 
 type Options = {
-	translationFiles: string[]
+	translationFiles: RegExp[]
 }
 
 type VisitorState = {
@@ -18,7 +19,7 @@ const declarations: t.ExportNamedDeclaration[] = []
 // TODO: Take from config.
 const languages = ['fi']
 
-export default function(): Babel.PluginObj<VisitorState> {
+export default function (): Babel.PluginObj<VisitorState> {
 	return {
 		name: 'translation-compiler',
 		visitor: {
@@ -29,7 +30,7 @@ export default function(): Babel.PluginObj<VisitorState> {
 				if (!t.isObjectExpression(declaration.node)) {
 					throw path.buildCodeFrameError(
 						'Translation file must have a default expression that is an object containing' +
-							'the translation keys.',
+						'the translation keys.',
 					)
 				}
 				const properties = declaration.get('properties') as NodePath[]
@@ -40,13 +41,39 @@ export default function(): Babel.PluginObj<VisitorState> {
 				if (!isTranslationFile(state)) return
 				annotateAsPure(path)
 			},
+			ImportDeclaration(path, state) {
+				if (isTranslationFile(state)) return
+				// TODO: Better file path resolving? Does Babel have an API for this?
+				const importedPath = resolvePath(dirname(state.filename), path.node.source.value)
+				const importingTranslationFile = isTranslationFile({
+					filename: importedPath,
+					opts: state.opts,
+				})
+				console.log(importedPath, importingTranslationFile)
+				if (!importingTranslationFile) return
+
+				const specifiers = path.get('specifiers')
+				const [defaultSpecifier] = specifiers
+				// TODO: Support additional imports?
+				if (specifiers.length !== 1 || !defaultSpecifier.isImportDefaultSpecifier()) {
+					throw path.buildCodeFrameError('Translation file must be imported using default import')
+				}
+			},
+			Identifier(path, state) {
+				if (isTranslationFile(state)) return
+				// TODO: Pass this from ImportDeclaration
+				const ref = path.referencesImport('./translations', 'default')
+				if (ref) console.log('\n!!!' + path.node.name + ' ' + state.filename + '\n')
+			}
 		},
 	}
 }
 
-function isTranslationFile(state: VisitorState): boolean {
+type TranslationFileCheckParams = Pick<VisitorState, 'filename' | 'opts'>
+
+function isTranslationFile(state: TranslationFileCheckParams): boolean {
 	// TODO: More flexible way to define translation files.
-	return state.opts.translationFiles.includes(state.filename)
+	return state.opts.translationFiles.some(_ => _.test(state.filename))
 }
 
 function visitObjectDeclarationProperties(properties: NodePath[], path: string[]) {
@@ -61,7 +88,7 @@ function visitObjectDeclarationProperties(properties: NodePath[], path: string[]
 		} else {
 			throw prop.buildCodeFrameError(
 				'Translation object keys can only be translation definitions, declared with t(..),' +
-					' or nested objects containing the translation objects.',
+				' or nested objects containing the translation objects.',
 			)
 		}
 	}
@@ -86,7 +113,7 @@ function visitTranslationObject(objectPropertyValue: NodePath<t.Node>, path: str
 			} else {
 				throw objectPropertyValue.buildCodeFrameError(
 					'Translation factory function t(..) should be called with' +
-						' a translation object or a function that returns the object.',
+					' a translation object or a function that returns the object.',
 				)
 			}
 
