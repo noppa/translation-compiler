@@ -8,7 +8,8 @@ const babelTraverse = require('@babel/traverse')
 const fs = require('fs')
 const path = require('path')
 
-const fileToTest = path.join(__dirname, '../../demo/translations.ts')
+const testFilename = 'demo.ts'
+const fileToTest = path.join(__dirname, '../../demo/' + testFilename)
 const code = fs.readFileSync(fileToTest, 'utf8')
 const ast = babelParser.parse(code, {
 	sourceType: 'module',
@@ -17,4 +18,9 @@ const ast = babelParser.parse(code, {
 
 const traverser = require('../../dist/babel-plugin/index.js').default().visitor
 
-babelTraverse.default(ast, traverser)
+babelTraverse.default(ast, traverser, undefined, {
+	filename: testFilename,
+	opts: {
+		translationFiles: [/translation/],
+	}
+})

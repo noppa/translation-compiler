@@ -41,31 +41,54 @@ export default function (): Babel.PluginObj<VisitorState> {
 				if (!isTranslationFile(state)) return
 				annotateAsPure(path)
 			},
-			ImportDeclaration(path, state) {
-				if (isTranslationFile(state)) return
-				// TODO: Better file path resolving? Does Babel have an API for this?
-				const importedPath = resolvePath(dirname(state.filename), path.node.source.value)
-				const importingTranslationFile = isTranslationFile({
-					filename: importedPath,
-					opts: state.opts,
-				})
-				console.log(importedPath, importingTranslationFile)
-				if (!importingTranslationFile) return
-
-				const specifiers = path.get('specifiers')
-				const [defaultSpecifier] = specifiers
-				// TODO: Support additional imports?
-				if (specifiers.length !== 1 || !defaultSpecifier.isImportDefaultSpecifier()) {
-					throw path.buildCodeFrameError('Translation file must be imported using default import')
-				}
-			},
-			Identifier(path, state) {
-				if (isTranslationFile(state)) return
-				// TODO: Pass this from ImportDeclaration
-				const ref = path.referencesImport('./translations', 'default')
-				if (ref) console.log('\n!!!' + path.node.name + ' ' + state.filename + '\n')
-			}
+			ImportDeclaration,
 		},
+	}
+}
+
+function ImportDeclaration(path: NodePath<t.ImportDeclaration>, state: VisitorState) {
+	if (isTranslationFile(state)) return
+	// TODO: Better file path resolving? Does Babel have an API for this?
+	const importedPath = resolvePath(dirname(state.filename), path.node.source.value)
+	const importingTranslationFile = isTranslationFile({
+		filename: importedPath,
+		opts: state.opts,
+	})
+	if (!importingTranslationFile) return
+
+	const specifiers = path.get('specifiers')
+	const [defaultSpecifier] = specifiers
+	// TODO: Support additional imports?
+	if (specifiers.length !== 1 || !defaultSpecifier.isImportDefaultSpecifier()) {
+		throw path.buildCodeFrameError('Translation file must be imported using default import')
+	}
+	for (const val of Object.values(defaultSpecifier.scope.bindings)) {
+		const refs = val.referencePaths
+		for (const ref of refs) followTranslationsReference(ref, state)
+	}
+}
+
+function followTranslationsReference(ref: NodePath<t.Node>, state: VisitorState) {
+	const parent = ref.parentPath
+	if (parent.isAssignmentExpression() || parent.isVariableDeclarator()) {
+		// TODO: Follow the new reference
+		console.log(new Error('Not implemented'))
+	} else if (parent.isMemberExpression()) {
+		let ancestor: NodePath<t.MemberExpression> = parent
+		const pathParts: any[] = []
+		while (ancestor.parentPath.isMemberExpression()) {
+			const parent = ancestor.parentPath
+			const property = ancestor.get('property') as NodePath<t.Node>
+			// TODO: Get rid of these "any" accessors.
+			pathParts.push(property.node['name'])
+			ancestor = parent
+		}
+		// TODO: Make sure we are at a call or spread expression.
+		// TODO: Replace the whole member expression tree with direct import.
+		pathParts.push(ancestor.get('property')['node'].name)
+		console.log(pathParts)
+	} else {
+		console.log('woop', parent)
 	}
 }
 
