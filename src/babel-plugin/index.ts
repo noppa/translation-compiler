@@ -9,58 +9,61 @@ type Options = {
 	translationFiles: RegExp[]
 }
 
-type VisitorState = {
+type VisitorStateBase = {
 	filename: string
 	opts: Options
 	cwd: any
 }
-
-type TranslationDeclaration = {
-	path: string[]
-	node: t.ExportNamedDeclaration
-	isUsed: boolean
+type TranslationProviderState = VisitorStateBase & {
+	declarations: t.ExportNamedDeclaration[]
 }
+type TranslationConsumerState = VisitorStateBase & {
+	imports: {
+		name: t.Identifier,
+		as: t.Identifier,
+	}[]
+}
+type VisitorState = TranslationProviderState | TranslationConsumerState
+
 // TODO: Take from config.
 const languages = ['fi']
 
 export default function (): Babel.PluginObj<VisitorState> {
-	const globalState = {
-		translations: new Set<TranslationDeclaration>()
-	}
-
 	return {
 		name: 'translation-compiler',
 		visitor: {
-			ExportDefaultDeclaration(path: NodePath<t.ExportDefaultDeclaration>, state: VisitorState) {
-				console.log(this, 'this')
-				if (!isTranslationFile(state)) return
-
-				const declaration = path.get('declaration')
-
-				if (!t.isObjectExpression(declaration.node)) {
-					throw path.buildCodeFrameError(
-						'Translation file must have a default expression that is an object containing' +
-						'the translation keys.',
-					)
-				}
-				const properties = declaration.get('properties') as NodePath[]
-				visitObjectDeclarationProperties(properties, [])
-				const declarations = [...globalState.translations.values()].map(_ => _.node)
-				path.replaceWithMultiple(declarations)
-			},
 			CallExpression(path, state) {
 				if (!isTranslationFile(state)) return
 				annotateAsPure(path)
 			},
+			ExportDefaultDeclaration,
 			ImportDeclaration,
 		},
 	}
 }
 
+function ExportDefaultDeclaration(path: NodePath<t.ExportDefaultDeclaration>, state: VisitorState) {
+	if (!isVisitingTranslationProvider(state)) return
+	if (!state.declarations) state.declarations = []
+
+	const declaration = path.get('declaration')
+
+	if (!t.isObjectExpression(declaration.node)) {
+		throw path.buildCodeFrameError(str(
+			'Translation file must have a default expression that is an object containing',
+			'the translation keys.'
+		))
+	}
+	const properties = declaration.get('properties') as NodePath[]
+	visitObjectDeclarationProperties(properties, [], state)
+	path.replaceWithMultiple(state.declarations)
+}
+
+const str = (...stringParts: string[]) => stringParts.join(' ')
+
 function ImportDeclaration(path: NodePath<t.ImportDeclaration>, state: VisitorState) {
-	if (isTranslationFile(state)) return
-	if (!state.paths) state.paths = new Set()
-	console.log('state', state.paths)
+	if (!isVisitingTranslationConsumer(state)) return
+	if (!state.imports) state.imports = []
 	// TODO: Better file path resolving? Does Babel have an API for this?
 	const importedPath = resolvePath(dirname(state.filename), path.node.source.value)
 	const importingTranslationFile = isTranslationFile({
@@ -81,7 +84,7 @@ function ImportDeclaration(path: NodePath<t.ImportDeclaration>, state: VisitorSt
 	}
 }
 
-function followTranslationsReference(ref: NodePath<t.Node>, state: VisitorState) {
+function followTranslationsReference(ref: NodePath<t.Node>, state: TranslationConsumerState) {
 	const parent = ref.parentPath
 	if (parent.isAssignmentExpression() || parent.isVariableDeclarator()) {
 		// TODO: Follow the new reference
@@ -98,11 +101,42 @@ function followTranslationsReference(ref: NodePath<t.Node>, state: VisitorState)
 		}
 		// TODO: Make sure we are at a call or spread expression.
 		// TODO: Replace the whole member expression tree with direct import.
-		pathParts.push(ancestor.get('property')['node'].name)
-		console.log(pathParts)
+		const highestAncestor = ancestor.get('property') as NodePath<t.ObjectProperty>
+		const statement = highestAncestor.parentPath.parentPath as NodePath<t.Node>
+
+		// TODO: Handle non-function calls
+		if (!statement.isCallExpression()) {
+			throw statement.buildCodeFrameError( // TODO
+				'Only function calls are supported at the moment'
+			)
+		}
+
+		pathParts.push(highestAncestor.node['name'])
+		const path = propertyPathToIdentifier(pathParts)
+		const pathName = path.name
+		const importAs = statement.scope.generateUidIdentifier(pathName)
+		state.imports.push({ name: path, as: importAs })
+		statement.replaceWith(
+			t.callExpression(
+				importAs,
+				statement.node.arguments
+			)
+		)
 	} else {
-		console.log('woop', parent)
+		// TODO: Better error.
+		throw parent.buildCodeFrameError(str(
+			'Translations can only be used directly as function calls,',
+			'like `translations.foo.bar()`. Passing around references to translations is not supported.'
+		))
 	}
+}
+
+function isVisitingTranslationProvider(state: VisitorState): state is TranslationProviderState {
+	return isTranslationFile(state)
+}
+
+function isVisitingTranslationConsumer(state: VisitorState): state is TranslationConsumerState {
+	return !isVisitingTranslationProvider(state)
 }
 
 type TranslationFileCheckParams = Pick<VisitorState, 'filename' | 'opts'>
@@ -112,7 +146,7 @@ function isTranslationFile(state: TranslationFileCheckParams): boolean {
 	return state.opts.translationFiles.some(_ => _.test(state.filename))
 }
 
-function visitObjectDeclarationProperties(properties: NodePath[], path: string[]) {
+function visitObjectDeclarationProperties(properties: NodePath[], path: string[], state: TranslationProviderState) {
 	for (const prop of properties) {
 		if (prop.isObjectProperty()) {
 			const key = prop.node.key
@@ -120,7 +154,7 @@ function visitObjectDeclarationProperties(properties: NodePath[], path: string[]
 				throw prop.buildCodeFrameError('Translation object keys must be simple identifiers')
 			}
 			const newPath = [key.name, ...path]
-			visitTranslationObject(prop.get('value') as NodePath<t.Node>, newPath)
+			visitTranslationObject(prop.get('value') as NodePath<t.Node>, newPath, state)
 		} else {
 			throw prop.buildCodeFrameError(
 				'Translation object keys can only be translation definitions, declared with t(..),' +
@@ -130,10 +164,10 @@ function visitObjectDeclarationProperties(properties: NodePath[], path: string[]
 	}
 }
 
-function visitTranslationObject(objectPropertyValue: NodePath<t.Node>, path: string[]) {
+function visitTranslationObject(objectPropertyValue: NodePath<t.Node>, path: string[], state: TranslationProviderState) {
 	if (objectPropertyValue.isObjectExpression()) {
 		const properties = objectPropertyValue.get('properties') as NodePath[]
-		return visitObjectDeclarationProperties(properties, path)
+		return visitObjectDeclarationProperties(properties, path, state)
 	}
 	// TODO: Check that it's the right kind of call expression.
 	if (objectPropertyValue.isCallExpression()) {
@@ -141,7 +175,7 @@ function visitTranslationObject(objectPropertyValue: NodePath<t.Node>, path: str
 		const translationExpr = objectPropertyValue.get('arguments')[0]
 
 		for (const language of languages) {
-			const exportableId = propertyPathToIdentifier(path, 'fi')
+			const exportableId = propertyPathToIdentifier([...path].reverse(), 'fi')
 			if (translationExpr.isArrowFunctionExpression() || translationExpr.isFunctionExpression()) {
 				unwrapTranslationFunction(translationExpr, language)
 			} else if (translationExpr.isObjectExpression()) {
@@ -155,7 +189,7 @@ function visitTranslationObject(objectPropertyValue: NodePath<t.Node>, path: str
 
 			// Move translation to an export declaration.
 			// The top level default export will be replaced with these later.
-			declarations.push(
+			state.declarations.push(
 				t.exportNamedDeclaration(
 					t.variableDeclaration('const', [
 						t.variableDeclarator(exportableId, translationExpr.node),
