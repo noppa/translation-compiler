@@ -6,7 +6,7 @@
 	"license": "MIT",
 	"private": true,
 	"scripts": {
-		"build": "tsc --build tsconfig.json",
+		"build": "babel src -d dist --extensions \".ts\" --config-file ./src/babel.config.js",
 		"test": "rm demo/dist/* ; webpack --config demo/webpack.config.js",
 		"dev": "node --inspect-brk test/debugging/interactive.js"
 	},
@@ -22,6 +22,7 @@
 		"@babel/parser": "^7.4.5",
 		"@babel/plugin-syntax-dynamic-import": "^7.2.0",
 		"@babel/plugin-transform-flow-strip-types": "^7.4.0",
+		"@babel/preset-env": "^7.4.5",
 		"@babel/preset-typescript": "^7.3.3",
 		"@babel/traverse": "^7.4.5",
 		"@types/babel-types": "^7.0.7",
