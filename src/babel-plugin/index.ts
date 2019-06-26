@@ -15,16 +15,26 @@ type VisitorState = {
 	cwd: any
 }
 
-const declarations: t.ExportNamedDeclaration[] = []
+type TranslationDeclaration = {
+	path: string[]
+	node: t.ExportNamedDeclaration
+	isUsed: boolean
+}
 // TODO: Take from config.
 const languages = ['fi']
 
 export default function (): Babel.PluginObj<VisitorState> {
+	const globalState = {
+		translations: new Set<TranslationDeclaration>()
+	}
+
 	return {
 		name: 'translation-compiler',
 		visitor: {
 			ExportDefaultDeclaration(path: NodePath<t.ExportDefaultDeclaration>, state: VisitorState) {
+				console.log(this, 'this')
 				if (!isTranslationFile(state)) return
+
 				const declaration = path.get('declaration')
 
 				if (!t.isObjectExpression(declaration.node)) {
@@ -35,6 +45,7 @@ export default function (): Babel.PluginObj<VisitorState> {
 				}
 				const properties = declaration.get('properties') as NodePath[]
 				visitObjectDeclarationProperties(properties, [])
+				const declarations = [...globalState.translations.values()].map(_ => _.node)
 				path.replaceWithMultiple(declarations)
 			},
 			CallExpression(path, state) {
@@ -48,6 +59,8 @@ export default function (): Babel.PluginObj<VisitorState> {
 
 function ImportDeclaration(path: NodePath<t.ImportDeclaration>, state: VisitorState) {
 	if (isTranslationFile(state)) return
+	if (!state.paths) state.paths = new Set()
+	console.log('state', state.paths)
 	// TODO: Better file path resolving? Does Babel have an API for this?
 	const importedPath = resolvePath(dirname(state.filename), path.node.source.value)
 	const importingTranslationFile = isTranslationFile({
@@ -154,12 +167,12 @@ function visitTranslationObject(objectPropertyValue: NodePath<t.Node>, path: str
 	}
 }
 
-const expectedTranslationObjectMsg =
+const translationObjectShouldBe =
 	'simple object describing {language: "translation string"} pairings'
 
 function unwrapTranslationObject(translationExpr: NodePath<t.ObjectExpression>, language: string) {
 	const prop = translationExpr.get('properties').find(prop => {
-		const keysShouldBeSimpleErrorMsg = `Translation object properties should be ${expectedTranslationObjectMsg}.`
+		const keysShouldBeSimpleErrorMsg = `Translation object properties should be ${translationObjectShouldBe}.`
 		if (!prop.isObjectProperty()) {
 			throw prop.buildCodeFrameError(keysShouldBeSimpleErrorMsg)
 		}
@@ -187,7 +200,7 @@ function unwrapTranslationFunction(
 ) {
 	const returnTypeErrorMsg =
 		'Translation factory function must return' +
-		` a translation object with ${expectedTranslationObjectMsg}.`
+		` a translation object with ${translationObjectShouldBe}.`
 
 	const body: NodePath<t.Node> = translationExpr.get('body')
 	if (body.isBlockStatement()) {
