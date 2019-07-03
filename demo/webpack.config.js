@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 const path = require('path')
 // const TerserPlugin = require('terser-webpack-plugin')
-// const { TranslationPlugin } = require('../dist/index.js')
+const { TranslationPlugin } = require('../dist/webpack-plugin/index.js')
 const relative = (...p) => path.join(__dirname, ...p)
 const babelConfig = require('./babel.config.js')
 

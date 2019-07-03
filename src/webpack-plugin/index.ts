@@ -30,6 +30,43 @@ class TranslationPlugin {
 			factory.hooks.beforeResolve.tap(pluginName, resolverPlugin)
 			// factory.hooks.parser.for('javascript/auto').tap(pluginName, parserPlugin)
 		})
+
+		function resolverPlugin(req: any) {
+			const importSource = path.resolve(req.context, req.request)
+			const isImportTranslationFile = isTranslationFile(importSource, options)
+			// TODO: Better path resolving using webpack's own apis?
+			if (!isImportTranslationFile || req.context.includes('node_modules')) return
+			const modulePath = importSource
+			console.log('resolver pass', modulePath)
+			const contents = `
+				console.log("WAPPPPP")
+			`
+
+			console.log(req)
+			req.depenencies = []
+
+			// Hack to allow access to fs private apis
+			const _fs: any = fs
+			_fs._readFileStorage.data.set(modulePath, [null, contents])
+			_fs._statStorage.data.set(modulePath, [
+				null,
+				new VirtualStats({
+					dev: 8675309,
+					nlink: 1,
+					uid: 501,
+					gid: 20,
+					rdev: 0,
+					blksize: 4096,
+					ino: 44700000,
+					mode: 33188,
+					size: 1,
+					atime: 1,
+					mtime: 1,
+					ctime: 1,
+					birthtime: 1,
+				}),
+			])
+		}
 		// compiler.hooks.compilation.tap(pluginName, function(factory: any) {
 		// 	// factory.hooks.dependencyReference.tap(pluginName, (ref: any, oth: any) => {
 		// 	// 	if (isTranslationFile(ref.module.resource, options)) {
@@ -62,45 +99,6 @@ class TranslationPlugin {
 				.tap(pluginName, (objectExpression: string, args: any, b: any) => {
 					console.log('call', objectExpression, args, b)
 				})
-		}
-
-		function resolverPlugin(req: any) {
-			if (!req.request.includes('fi.js') || req.context.includes('node_modules')) return
-			const modulePath = compiler.context + '/demo/fi.js'
-			console.log(modulePath)
-			const contents = `
-				import {
-					bar
-				} from './translations'
-
-				const fi$bar = bar
-
-				export {
-					fi$bar as bar
-				}
-			`
-
-			// Hack to allow access to fs private apis
-			const _fs: any = fs
-			_fs._readFileStorage.data.set(modulePath, [null, contents])
-			_fs._statStorage.data.set(modulePath, [
-				null,
-				new VirtualStats({
-					dev: 8675309,
-					nlink: 1,
-					uid: 501,
-					gid: 20,
-					rdev: 0,
-					blksize: 4096,
-					ino: 44700000,
-					mode: 33188,
-					size: 1,
-					atime: 1,
-					mtime: 1,
-					ctime: 1,
-					birthtime: 1,
-				}),
-			])
 		}
 	}
 }
