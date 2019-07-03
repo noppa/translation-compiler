@@ -67,7 +67,8 @@ function ImportDeclaration(path: NodePath<t.ImportDeclaration>, state: VisitorSt
 	if (!isVisitingTranslationConsumer(state)) return
 	if (!state.imports) state.imports = []
 	// TODO: Better file path resolving? Does Babel have an API for this?
-	const importedPath = resolvePath(dirname(state.filename), path.node.source.value)
+	const importSource = path.node.source.value
+	const importedPath = resolvePath(dirname(state.filename), importSource)
 	const importingTranslationFile = isTranslationFile({
 		filename: importedPath,
 		opts: state.opts,
@@ -84,6 +85,13 @@ function ImportDeclaration(path: NodePath<t.ImportDeclaration>, state: VisitorSt
 		const refs = val.referencePaths
 		for (const ref of refs) followTranslationsReference(ref, state)
 	}
+
+	const importDeclaration = t.importDeclaration(
+		state.imports.map(def => t.importSpecifier(def.as, def.name)),
+		t.stringLiteral(importSource),
+	)
+	path.insertBefore(importDeclaration)
+	path.stop()
 }
 
 function followTranslationsReference(ref: NodePath<t.Node>, state: TranslationConsumerState) {
@@ -108,10 +116,7 @@ function followTranslationsReference(ref: NodePath<t.Node>, state: TranslationCo
 
 		// TODO: Handle non-function calls
 		if (!statement.isCallExpression()) {
-			throw statement.buildCodeFrameError(
-				// TODO
-				'Only function calls are supported at the moment',
-			)
+			throw statement.buildCodeFrameError('Only function calls are supported at the moment')
 		}
 
 		pathParts.push(highestAncestor.node['name'])
@@ -161,8 +166,10 @@ function visitObjectDeclarationProperties(
 			visitTranslationObject(prop.get('value') as NodePath<t.Node>, newPath, state)
 		} else {
 			throw prop.buildCodeFrameError(
-				'Translation object keys can only be translation definitions, declared with t(..),' +
-					' or nested objects containing the translation objects.',
+				str(
+					'Translation object keys can only be translation definitions, declared with t(..),',
+					'or nested objects containing the translation objects.',
+				),
 			)
 		}
 	}
