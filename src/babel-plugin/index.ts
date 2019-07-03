@@ -19,8 +19,8 @@ type TranslationProviderState = VisitorStateBase & {
 }
 type TranslationConsumerState = VisitorStateBase & {
 	imports: {
-		name: t.Identifier,
-		as: t.Identifier,
+		name: t.Identifier
+		as: t.Identifier
 	}[]
 }
 type VisitorState = TranslationProviderState | TranslationConsumerState
@@ -28,7 +28,7 @@ type VisitorState = TranslationProviderState | TranslationConsumerState
 // TODO: Take from config.
 const languages = ['fi']
 
-export default function (): Babel.PluginObj<VisitorState> {
+export default function(): Babel.PluginObj<VisitorState> {
 	return {
 		name: 'translation-compiler',
 		visitor: {
@@ -49,10 +49,12 @@ function ExportDefaultDeclaration(path: NodePath<t.ExportDefaultDeclaration>, st
 	const declaration = path.get('declaration')
 
 	if (!t.isObjectExpression(declaration.node)) {
-		throw path.buildCodeFrameError(str(
-			'Translation file must have a default expression that is an object containing',
-			'the translation keys.'
-		))
+		throw path.buildCodeFrameError(
+			str(
+				'Translation file must have a default expression that is an object containing',
+				'the translation keys.',
+			),
+		)
 	}
 	const properties = declaration.get('properties') as NodePath[]
 	visitObjectDeclarationProperties(properties, [], state)
@@ -106,8 +108,9 @@ function followTranslationsReference(ref: NodePath<t.Node>, state: TranslationCo
 
 		// TODO: Handle non-function calls
 		if (!statement.isCallExpression()) {
-			throw statement.buildCodeFrameError( // TODO
-				'Only function calls are supported at the moment'
+			throw statement.buildCodeFrameError(
+				// TODO
+				'Only function calls are supported at the moment',
 			)
 		}
 
@@ -116,18 +119,15 @@ function followTranslationsReference(ref: NodePath<t.Node>, state: TranslationCo
 		const pathName = path.name
 		const importAs = statement.scope.generateUidIdentifier(pathName)
 		state.imports.push({ name: path, as: importAs })
-		statement.replaceWith(
-			t.callExpression(
-				importAs,
-				statement.node.arguments
-			)
-		)
+		statement.replaceWith(t.callExpression(importAs, statement.node.arguments))
 	} else {
 		// TODO: Better error.
-		throw parent.buildCodeFrameError(str(
-			'Translations can only be used directly as function calls,',
-			'like `translations.foo.bar()`. Passing around references to translations is not supported.'
-		))
+		throw parent.buildCodeFrameError(
+			str(
+				'Translations can only be used directly as function calls,',
+				'like `translations.foo.bar()`. Passing around references to translations is not supported.',
+			),
+		)
 	}
 }
 
@@ -146,7 +146,11 @@ function isTranslationFile(state: TranslationFileCheckParams): boolean {
 	return state.opts.translationFiles.some(_ => _.test(state.filename))
 }
 
-function visitObjectDeclarationProperties(properties: NodePath[], path: string[], state: TranslationProviderState) {
+function visitObjectDeclarationProperties(
+	properties: NodePath[],
+	path: string[],
+	state: TranslationProviderState,
+) {
 	for (const prop of properties) {
 		if (prop.isObjectProperty()) {
 			const key = prop.node.key
@@ -158,13 +162,17 @@ function visitObjectDeclarationProperties(properties: NodePath[], path: string[]
 		} else {
 			throw prop.buildCodeFrameError(
 				'Translation object keys can only be translation definitions, declared with t(..),' +
-				' or nested objects containing the translation objects.',
+					' or nested objects containing the translation objects.',
 			)
 		}
 	}
 }
 
-function visitTranslationObject(objectPropertyValue: NodePath<t.Node>, path: string[], state: TranslationProviderState) {
+function visitTranslationObject(
+	objectPropertyValue: NodePath<t.Node>,
+	path: string[],
+	state: TranslationProviderState,
+) {
 	if (objectPropertyValue.isObjectExpression()) {
 		const properties = objectPropertyValue.get('properties') as NodePath[]
 		return visitObjectDeclarationProperties(properties, path, state)
@@ -183,7 +191,7 @@ function visitTranslationObject(objectPropertyValue: NodePath<t.Node>, path: str
 			} else {
 				throw objectPropertyValue.buildCodeFrameError(
 					'Translation factory function t(..) should be called with' +
-					' a translation object or a function that returns the object.',
+						' a translation object or a function that returns the object.',
 				)
 			}
 
