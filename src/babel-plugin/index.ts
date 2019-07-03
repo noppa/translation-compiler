@@ -4,26 +4,14 @@ import * as Babel from '@babel/core'
 import annotateAsPure from '@babel/helper-annotate-as-pure'
 import { resolve as resolvePath, dirname } from 'path'
 import propertyPathToIdentifier from '../core/property-path-to-identifier'
-
-type Options = {
-	translationFiles: RegExp[]
-}
-
-type VisitorStateBase = {
-	filename: string
-	opts: Options
-	cwd: any
-}
-type TranslationProviderState = VisitorStateBase & {
-	declarations: t.ExportNamedDeclaration[]
-}
-type TranslationConsumerState = VisitorStateBase & {
-	imports: {
-		name: t.Identifier
-		as: t.Identifier
-	}[]
-}
-type VisitorState = TranslationProviderState | TranslationConsumerState
+import {
+	VisitorState,
+	TranslationConsumerState,
+	TranslationProviderState,
+	isTranslationFile,
+	isVisitingTranslationConsumer,
+	isVisitingTranslationProvider,
+} from '../core/visitor-utils'
 
 // TODO: Take from config.
 const languages = ['fi']
@@ -134,21 +122,6 @@ function followTranslationsReference(ref: NodePath<t.Node>, state: TranslationCo
 			),
 		)
 	}
-}
-
-function isVisitingTranslationProvider(state: VisitorState): state is TranslationProviderState {
-	return isTranslationFile(state)
-}
-
-function isVisitingTranslationConsumer(state: VisitorState): state is TranslationConsumerState {
-	return !isVisitingTranslationProvider(state)
-}
-
-type TranslationFileCheckParams = Pick<VisitorState, 'filename' | 'opts'>
-
-function isTranslationFile(state: TranslationFileCheckParams): boolean {
-	// TODO: More flexible way to define translation files.
-	return state.opts.translationFiles.some(_ => _.test(state.filename))
 }
 
 function visitObjectDeclarationProperties(

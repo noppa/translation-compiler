@@ -4,6 +4,7 @@ const path = require('path')
 // const TerserPlugin = require('terser-webpack-plugin')
 // const { TranslationPlugin } = require('../dist/index.js')
 const relative = (...p) => path.join(__dirname, ...p)
+const babelConfig = require('./babel.config.js')
 
 module.exports = {
 	mode: 'development',
@@ -17,12 +18,8 @@ module.exports = {
 		filename: '[name].js',
 	},
 	plugins: [
-		// new TranslationPlugin({
-		// 	languages: ['en'],
-		// 	translationFiles: {
-		// 		[relative('./compiled-translations')]: /translations(?:\.ts)?$/,
-		// 	},
-		// }),
+		// TODO: Better resolve for translation options
+		new TranslationPlugin(babelConfig.plugins[0][1]),
 	],
 	module: {
 		rules: [
@@ -32,7 +29,7 @@ module.exports = {
 					{
 						loader: 'babel-loader',
 						options: {
-							...require('./babel.config.js'),
+							...babelConfig,
 						},
 					},
 				],
