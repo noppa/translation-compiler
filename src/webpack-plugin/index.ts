@@ -28,7 +28,6 @@ class TranslationPlugin {
 		const fs = compiler.inputFileSystem
 		compiler.hooks.normalModuleFactory.tap(pluginName, factory => {
 			factory.hooks.beforeResolve.tap(pluginName, resolverPlugin)
-			// factory.hooks.parser.for('javascript/auto').tap(pluginName, parserPlugin)
 		})
 
 		function resolverPlugin(req: any) {
@@ -36,36 +35,39 @@ class TranslationPlugin {
 			const isImportTranslationFile = isTranslationFile(importSource, options)
 			// TODO: Better path resolving using webpack's own apis?
 			if (!isImportTranslationFile || req.context.includes('node_modules')) return
-			const modulePath = importSource
-			console.log('resolver pass', modulePath)
-			const contents = `
-				console.log("WAPPPPP")
-			`
-
-			console.log(req)
-			req.depenencies = []
 
 			// Hack to allow access to fs private apis
 			const _fs: any = fs
-			_fs._readFileStorage.data.set(modulePath, [null, contents])
-			_fs._statStorage.data.set(modulePath, [
-				null,
-				new VirtualStats({
-					dev: 8675309,
-					nlink: 1,
-					uid: 501,
-					gid: 20,
-					rdev: 0,
-					blksize: 4096,
-					ino: 44700000,
-					mode: 33188,
-					size: 1,
-					atime: 1,
-					mtime: 1,
-					ctime: 1,
-					birthtime: 1,
-				}),
-			])
+			const { data } = _fs._readFileStorage
+			const existingFile = data.get(importSource) || ''
+			if (existingFile) {
+				console.log('Exists!', existingFile)
+			}
+			const importedIds = req.dependencies.map(_ => _.id).filter(Boolean)
+			const importStatements = importedIds.map(id => `export {${id}} from 'tt';`).join('\n')
+			const contents = existingFile + '\n' + importStatements
+
+			_fs._readFileStorage.data.set(importSource, [null, contents])
+			if (!existingFile) {
+				_fs._statStorage.data.set(importSource, [
+					null,
+					new VirtualStats({
+						dev: 8675309,
+						nlink: 1,
+						uid: 501,
+						gid: 20,
+						rdev: 0,
+						blksize: 4096,
+						ino: 44700000,
+						mode: 33188,
+						size: 1,
+						atime: 1,
+						mtime: 1,
+						ctime: 1,
+						birthtime: 1,
+					}),
+				])
+			}
 		}
 		// compiler.hooks.compilation.tap(pluginName, function(factory: any) {
 		// 	// factory.hooks.dependencyReference.tap(pluginName, (ref: any, oth: any) => {
