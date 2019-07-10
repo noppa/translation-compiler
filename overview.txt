@@ -1,0 +1,31 @@
+++
+
+          Original                                        After Babel
+
+
+                  translations.js                        translate.js                                               translations.js
+
+          +------->  export {foo}             +------->  (nothing)   +----import(lazy)-->  fi.js (imaginary)            export {foo_fi, foo_en}
+          |                                   |
+        import {foo}                        import {foo}             +----import(lazy)-->  en.js (imaginary)
+          |                                   |
+          +                                   +
+    foo.js                              foo.js
+
+
+
+
+
+                          After Webpack
+
+
+                         translate.js
+
+                  +------->    export foo = a => lazy.foo(a)   +----import(lazy)----->   fi.js (imaginary)           translations.js
+                  |
+                import {foo}                                          export {foo_fi} from            +-------+------>   export {foo_fi, foo_en}
+                  |                                                                                           |
+                  +                                                                                           |
+            foo.js                                             +----import(lazy)----->   en.js (imaginary)    |
+                                                                                                              |
+                                                                      export {foo_en} from            +-------+
