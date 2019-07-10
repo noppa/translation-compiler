@@ -11,10 +11,9 @@ import {
 	isTranslationFile,
 	isVisitingTranslationConsumer,
 	isVisitingTranslationProvider,
+	str,
 } from '../core/visitor-utils'
-
-// TODO: Take from config.
-const languages = ['fi']
+import { translateRuntimePath } from '../core/constants'
 
 export default function(): Babel.PluginObj<VisitorState> {
 	return {
@@ -49,8 +48,6 @@ function ExportDefaultDeclaration(path: NodePath<t.ExportDefaultDeclaration>, st
 	path.replaceWithMultiple(state.declarations)
 }
 
-const str = (...stringParts: string[]) => stringParts.join(' ')
-
 function ImportDeclaration(path: NodePath<t.ImportDeclaration>, state: VisitorState) {
 	if (!isVisitingTranslationConsumer(state)) return
 	if (!state.imports) state.imports = []
@@ -76,7 +73,7 @@ function ImportDeclaration(path: NodePath<t.ImportDeclaration>, state: VisitorSt
 
 	const importDeclaration = t.importDeclaration(
 		state.imports.map(def => t.importSpecifier(def.as, def.name)),
-		t.stringLiteral(importSource),
+		t.stringLiteral(translateRuntimePath),
 	)
 	path.insertBefore(importDeclaration)
 	path.stop()
@@ -162,7 +159,7 @@ function visitTranslationObject(
 		// TODO: Other languages.
 		const translationExpr = objectPropertyValue.get('arguments')[0]
 
-		for (const language of languages) {
+		for (const language of state.opts.languages) {
 			const exportableId = propertyPathToIdentifier([...path].reverse(), 'fi')
 			if (translationExpr.isArrowFunctionExpression() || translationExpr.isFunctionExpression()) {
 				unwrapTranslationFunction(translationExpr, language)

@@ -7,6 +7,7 @@ export type VisitorStateBase = {
 }
 export type Options = {
 	translationFiles: RegExp[]
+	languages: string[]
 }
 
 export type TranslationProviderState = VisitorStateBase & {
@@ -38,3 +39,5 @@ export function isTranslationFile(state: TranslationFileCheckParams): boolean {
 	// TODO: More flexible way to define translation files.
 	return state.opts.translationFiles.some(_ => _.test(state.filename))
 }
+
+export const str = (...stringParts: string[]) => stringParts.join(' ')

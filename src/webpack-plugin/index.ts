@@ -4,6 +4,8 @@ import VirtualStats from './VirtualStats.js'
 import { Compiler } from 'webpack'
 import * as _ from 'lodash'
 import { Options } from '../core/visitor-utils'
+import { translateRuntimePath } from '../core/constants.js'
+import * as file from './file'
 
 const pluginName = 'TranslationPlugin'
 
@@ -31,44 +33,18 @@ class TranslationPlugin {
 		})
 
 		function resolverPlugin(req: any) {
-			const importSource = path.resolve(req.context, req.request)
-			const isImportTranslationFile = isTranslationFile(importSource, options)
-			// TODO: Better path resolving using webpack's own apis?
+			const isImportTranslationFile = req.request === translateRuntimePath
 			if (!isImportTranslationFile || req.context.includes('node_modules')) return
 
-			// Hack to allow access to fs private apis
-			const _fs: any = fs
-			const { data } = _fs._readFileStorage
-			const existingFile = data.get(importSource) || ''
-			if (existingFile) {
-				console.log('Exists!', existingFile)
-			}
-			const importedIds = req.dependencies.map(_ => _.id).filter(Boolean)
-			const importStatements = importedIds.map(id => `export {${id}} from 'tt';`).join('\n')
-			const contents = existingFile + '\n' + importStatements
+			const importedIds: string[] = req.dependencies.map(_ => _.id).filter(Boolean)
+			file.setFileIfNotExists(fs, translateRuntimePath, getTranslationRuntimeFileContents)
 
-			_fs._readFileStorage.data.set(importSource, [null, contents])
-			if (!existingFile) {
-				_fs._statStorage.data.set(importSource, [
-					null,
-					new VirtualStats({
-						dev: 8675309,
-						nlink: 1,
-						uid: 501,
-						gid: 20,
-						rdev: 0,
-						blksize: 4096,
-						ino: 44700000,
-						mode: 33188,
-						size: 1,
-						atime: 1,
-						mtime: 1,
-						ctime: 1,
-						birthtime: 1,
-					}),
-				])
+			for (const lang of options.languages) {
+				const importStatements = importedIds.map(id => `export {${id}} from 'tt';`).join('\n')
+				// TODO: This should be done at the end of compilation to avoid duplicates
+				file.appendToFile(fs, langPath(lang))
 			}
-		}
+
 		// compiler.hooks.compilation.tap(pluginName, function(factory: any) {
 		// 	// factory.hooks.dependencyReference.tap(pluginName, (ref: any, oth: any) => {
 		// 	// 	if (isTranslationFile(ref.module.resource, options)) {
@@ -102,7 +78,16 @@ class TranslationPlugin {
 					console.log('call', objectExpression, args, b)
 				})
 		}
+
+		function getTranslationRuntimeFileContents() {
+			// TODO: Better impl
+			return options.languages
+				.map(lang => `const ${lang} = () => import('${langPath(lang)}')`)
+				.join('\n')
+		}
 	}
 }
+
+const langPath = (lang: string) => `translation-compiler/gen/langs/${lang}.js`
 
 export { TranslationPlugin }
