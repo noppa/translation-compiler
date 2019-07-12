@@ -18,9 +18,9 @@ const ast = babelParser.parse(code, {
 
 const traverser = require('../../dist/babel-plugin/index.js').default().visitor
 
+const pluginOptions = require('../../demo/babel.config.js').plugins[0][1]
+
 babelTraverse.default(ast, traverser, undefined, {
 	filename: testFilename,
-	opts: {
-		translationFiles: [/translation/],
-	}
+	opts: pluginOptions,
 })

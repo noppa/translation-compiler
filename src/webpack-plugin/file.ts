@@ -34,7 +34,9 @@ export function setFileIfNotExists(
 	contentsProvider: () => string,
 ) {
 	const _fs = fs as any
-	if (_fs._readFileStorage.data.has(filepath)) {
+	console.log('Asking if file storage has', filepath)
+	if (!_fs._readFileStorage.data.has(filepath)) {
+		console.log('Does not exist, setting', contentsProvider())
 		return setFile(fs, filepath, contentsProvider())
 	}
 }

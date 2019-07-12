@@ -130,11 +130,13 @@ function visitObjectDeclarationProperties(
 		if (prop.isObjectProperty()) {
 			const key = prop.node.key
 			if (!t.isIdentifier(key)) {
+				console.log('not identifier')
 				throw prop.buildCodeFrameError('Translation object keys must be simple identifiers')
 			}
 			const newPath = [key.name, ...path]
 			visitTranslationObject(prop.get('value') as NodePath<t.Node>, newPath, state)
 		} else {
+			console.log('not obj prop')
 			throw prop.buildCodeFrameError(
 				str(
 					'Translation object keys can only be translation definitions, declared with t(..),',
@@ -159,6 +161,7 @@ function visitTranslationObject(
 		// TODO: Other languages.
 		const translationExpr = objectPropertyValue.get('arguments')[0]
 
+		// BUG: This breaks with multiple languages!! Don't mutate the tree, create clones.
 		for (const language of state.opts.languages) {
 			const exportableId = propertyPathToIdentifier([...path].reverse(), 'fi')
 			if (translationExpr.isArrowFunctionExpression() || translationExpr.isFunctionExpression()) {
@@ -227,11 +230,13 @@ function unwrapTranslationFunction(
 			.get('body')
 			.filter(isPathReturnStatement)
 		if (!returnStatements.length) {
+			console.log('no return')
 			throw body.buildCodeFrameError(returnTypeErrorMsg)
 		}
 		for (const rs of returnStatements) {
 			const arg = rs.get('argument')
 			if (!arg.isObjectExpression()) {
+				console.log('not obj')
 				throw arg.buildCodeFrameError(returnTypeErrorMsg)
 			}
 
