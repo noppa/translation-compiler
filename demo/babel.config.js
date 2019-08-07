@@ -8,7 +8,7 @@ module.exports = {
 		[
 			translationCompiler,
 			{
-				translationFiles: [/translation-compiler\/demo\/translations/],
+				translationFiles: ['./translations.ts'],
 				languages: ['fi'],
 			},
 		],

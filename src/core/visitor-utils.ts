@@ -6,7 +6,7 @@ export type VisitorStateBase = {
 	cwd: any
 }
 export type Options = {
-	translationFiles: RegExp[]
+	translationFiles: string[]
 	languages: string[]
 }
 
