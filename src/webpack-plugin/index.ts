@@ -42,48 +42,49 @@ class TranslationPlugin {
 			for (const lang of options.languages) {
 				const importStatements = importedIds.map(id => `export {${id}} from 'tt';`).join('\n')
 				// TODO: This should be done at the end of compilation to avoid duplicates
-				file.appendToFile(fs, langPath(lang))
+				file.appendToFile(fs, langPath(lang), importStatements)  
 			}
 
-		// compiler.hooks.compilation.tap(pluginName, function(factory: any) {
-		// 	// factory.hooks.dependencyReference.tap(pluginName, (ref: any, oth: any) => {
-		// 	// 	if (isTranslationFile(ref.module.resource, options)) {
-		// 	// 		console.log(ref.importedNames, Object.keys(ref.module))
-		// 	// 	}
-		// 	// })
-		// 	factory.hooks.optimizeDependenciesAdvanced.tap(pluginName, (...args) => {
-		// 		console.log('opt', args)
-		// 	})
+			// compiler.hooks.compilation.tap(pluginName, function(factory: any) {
+			// 	// factory.hooks.dependencyReference.tap(pluginName, (ref: any, oth: any) => {
+			// 	// 	if (isTranslationFile(ref.module.resource, options)) {
+			// 	// 		console.log(ref.importedNames, Object.keys(ref.module))
+			// 	// 	}
+			// 	// })
+			// 	factory.hooks.optimizeDependenciesAdvanced.tap(pluginName, (...args) => {
+			// 		console.log('opt', args)
+			// 	})
 
-		// 	// factory.hooks.parser.for('javascript/auto').tap(pluginName, function(parser: any) {
-		// 	// 	console.log('parser')
-		// 	// 	parser.hooks.evaluate.for('CallExpression').tap(pluginName, function(...args) {
-		// 	// 		console.log('expr', args, this)
-		// 	// 	})
-		// 	// })
-		// })
+			// 	// factory.hooks.parser.for('javascript/auto').tap(pluginName, function(parser: any) {
+			// 	// 	console.log('parser')
+			// 	// 	parser.hooks.evaluate.for('CallExpression').tap(pluginName, function(...args) {
+			// 	// 		console.log('expr', args, this)
+			// 	// 	})
+			// 	// })
+			// })
 
-		function parserPlugin(parser: any) {
-			console.log('parser plugin')
-			// TODO: CommonJS requires
-			parser.hooks.import.tap(pluginName, (statement: any, source: any) => {
-				const sourcePath = path.join(parser.state.current.context, source)
-				if (isTranslationFile(sourcePath, options)) {
-					console.log('is translation file', sourcePath, statement)
-				}
-			})
-			parser.hooks.evaluate
-				.for('CallExpression')
-				.tap(pluginName, (objectExpression: string, args: any, b: any) => {
-					console.log('call', objectExpression, args, b)
+			function parserPlugin(parser: any) {
+				console.log('parser plugin')
+				// TODO: CommonJS requires
+				parser.hooks.import.tap(pluginName, (statement: any, source: any) => {
+					const sourcePath = path.join(parser.state.current.context, source)
+					if (isTranslationFile(sourcePath, options)) {
+						console.log('is translation file', sourcePath, statement)
+					}
 				})
-		}
+				parser.hooks.evaluate
+					.for('CallExpression')
+					.tap(pluginName, (objectExpression: string, args: any, b: any) => {
+						console.log('call', objectExpression, args, b)
+					})
+			}
 
-		function getTranslationRuntimeFileContents() {
-			// TODO: Better impl
-			return options.languages
-				.map(lang => `const ${lang} = () => import('${langPath(lang)}')`)
-				.join('\n')
+			function getTranslationRuntimeFileContents() {
+				// TODO: Better impl
+				return options.languages
+					.map(lang => `const ${lang} = () => import('${langPath(lang)}')`)
+					.join('\n')
+			}
 		}
 	}
 }
