@@ -1,4 +1,5 @@
 import * as t from '@babel/types'
+import * as path from 'path'
 
 export type VisitorStateBase = {
 	filename: string
@@ -33,11 +34,15 @@ export function isVisitingTranslationConsumer(
 	return !isVisitingTranslationProvider(state)
 }
 
-export type TranslationFileCheckParams = Pick<VisitorState, 'filename' | 'opts'>
+export type TranslationFileCheckParams = Pick<VisitorState, 'filename' | 'opts' | 'cwd'>
 
 export function isTranslationFile(state: TranslationFileCheckParams): boolean {
 	// TODO: More flexible way to define translation files.
-	return state.opts.translationFiles.some(_ => _.test(state.filename))
+	const { cwd } = state
+	const translationFiles = state.opts.translationFiles.map(_ => path.join(cwd, _))
+	const r = translationFiles.includes(state.filename)
+	console.log(translationFiles, state.filename, r)
+	return r
 }
 
 export const str = (...stringParts: string[]) => stringParts.join(' ')

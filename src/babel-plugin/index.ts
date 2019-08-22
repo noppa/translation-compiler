@@ -57,6 +57,7 @@ function ImportDeclaration(path: NodePath<t.ImportDeclaration>, state: VisitorSt
 	const importingTranslationFile = isTranslationFile({
 		filename: importedPath,
 		opts: state.opts,
+		cwd: state.cwd,
 	})
 	if (!importingTranslationFile) return
 
