@@ -57,6 +57,7 @@ function ImportDeclaration(path: NodePath<t.ImportDeclaration>, state: VisitorSt
 	const importingTranslationFile = isTranslationFile({
 		filename: importedPath,
 		opts: state.opts,
+		cwd: state.cwd,
 	})
 	if (!importingTranslationFile) return
 
@@ -159,6 +160,7 @@ function visitTranslationObject(
 		// TODO: Other languages.
 		const translationExpr = objectPropertyValue.get('arguments')[0]
 
+		// BUG: This breaks with multiple languages!! Don't mutate the tree, create clones.
 		for (const language of state.opts.languages) {
 			const exportableId = propertyPathToIdentifier([...path].reverse(), 'fi')
 			if (translationExpr.isArrowFunctionExpression() || translationExpr.isFunctionExpression()) {

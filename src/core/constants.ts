@@ -1,1 +1,1 @@
-export const translateRuntimePath = 'translation-compiler/gen/translate.js'
+export const translateRuntimePath = '/translation-compiler/gen/translate.js'
