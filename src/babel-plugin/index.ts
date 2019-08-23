@@ -30,7 +30,6 @@ export default function(): Babel.PluginObj<VisitorState> {
 }
 
 function ExportDefaultDeclaration(path: NodePath<t.ExportDefaultDeclaration>, state: VisitorState) {
-	console.log('is prov', state.filename, isVisitingTranslationProvider(state))
 	if (!isVisitingTranslationProvider(state)) return
 	if (!state.declarations) state.declarations = []
 
@@ -60,6 +59,7 @@ function ImportDeclaration(path: NodePath<t.ImportDeclaration>, state: VisitorSt
 		opts: state.opts,
 		cwd: state.cwd,
 	})
+	console.log('importing', importedPath, importingTranslationFile)
 	if (!importingTranslationFile) return
 
 	const specifiers = path.get('specifiers')
@@ -68,6 +68,7 @@ function ImportDeclaration(path: NodePath<t.ImportDeclaration>, state: VisitorSt
 	if (specifiers.length !== 1 || !defaultSpecifier.isImportDefaultSpecifier()) {
 		throw path.buildCodeFrameError('Translation file must be imported using default import')
 	}
+	console.log('import')
 	for (const val of Object.values(defaultSpecifier.scope.bindings)) {
 		const refs = val.referencePaths
 		for (const ref of refs) followTranslationsReference(ref, state)
@@ -87,12 +88,13 @@ function followTranslationsReference(ref: NodePath<t.Node>, state: TranslationCo
 		// TODO: Follow the new reference
 		console.log(new Error('Not implemented'))
 	} else if (parent.isMemberExpression()) {
+		console.log('member', parent.node.type)
 		let ancestor: NodePath<t.MemberExpression> = parent
 		const pathParts: any[] = []
 		while (ancestor.parentPath.isMemberExpression()) {
 			const parent = ancestor.parentPath
 			const property = ancestor.get('property') as NodePath<t.Node>
-			// TODO: Get rid of these "any" accessors.
+			// TODO(type safety): Get rid of these "any" accessors.
 			pathParts.push(property.node['name'])
 			ancestor = parent
 		}
@@ -111,6 +113,7 @@ function followTranslationsReference(ref: NodePath<t.Node>, state: TranslationCo
 		const pathName = path.name
 		const importAs = statement.scope.generateUidIdentifier(pathName)
 		state.imports.push({ name: path, as: importAs })
+		console.log('woop', importAs)
 		statement.replaceWith(t.callExpression(importAs, statement.node.arguments))
 	} else {
 		// TODO: Better error.

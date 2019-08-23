@@ -34,7 +34,6 @@ class TranslationPlugin {
 		})
 
 		function resolverPlugin(req: any) {
-			console.log(req.contextInfo)
 			const isImportTranslationFile = req.request === translateRuntimePath
 
 			if (!isImportTranslationFile || req.context.includes('node_modules')) return

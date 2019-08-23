@@ -41,10 +41,7 @@ export function isTranslationFile(state: TranslationFileCheckParams): boolean {
 	const { cwd } = state
 	const translationFiles = state.opts.translationFiles.map(_ => path.join(cwd, _))
 	// Remove extension
-	const filename = state.filename
-		.split('.')
-		.slice(0, -1)
-		.join('.')
+	const filename = state.filename.replace(/\.[^/.]+$/, '')
 	return translationFiles.includes(filename)
 }
 
