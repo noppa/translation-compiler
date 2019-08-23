@@ -30,6 +30,7 @@ export default function(): Babel.PluginObj<VisitorState> {
 }
 
 function ExportDefaultDeclaration(path: NodePath<t.ExportDefaultDeclaration>, state: VisitorState) {
+	console.log('is prov', state.filename, isVisitingTranslationProvider(state))
 	if (!isVisitingTranslationProvider(state)) return
 	if (!state.declarations) state.declarations = []
 

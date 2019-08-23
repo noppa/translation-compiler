@@ -40,8 +40,12 @@ export function isTranslationFile(state: TranslationFileCheckParams): boolean {
 	// TODO: More flexible way to define translation files.
 	const { cwd } = state
 	const translationFiles = state.opts.translationFiles.map(_ => path.join(cwd, _))
-	const r = translationFiles.includes(state.filename)
-	return r
+	// Remove extension
+	const filename = state.filename
+		.split('.')
+		.slice(0, -1)
+		.join('.')
+	return translationFiles.includes(filename)
 }
 
 export const str = (...stringParts: string[]) => stringParts.join(' ')
