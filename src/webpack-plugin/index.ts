@@ -34,6 +34,7 @@ class TranslationPlugin {
 		})
 
 		function resolverPlugin(req: any) {
+			console.log(req.contextInfo)
 			const isImportTranslationFile = req.request === translateRuntimePath
 
 			if (!isImportTranslationFile || req.context.includes('node_modules')) return
@@ -41,10 +42,12 @@ class TranslationPlugin {
 
 			const importedIds: string[] = req.dependencies.map(_ => _.id).filter(Boolean)
 
+			// TODO: Better way to resolve translation file path (config changes or via Babel).
+			const translationFilePath = path.join(context, options.translationFiles[0])
+
 			for (const lang of options.languages) {
 				const importStatements = importedIds
-					// TODO: Better way to resolve translation file path (config changes or via Babel).
-					.map(id => `export {${id}_${lang}} from './translations';`)
+					.map(id => `export {${id}_${lang}} from '${translationFilePath}';`)
 					.join('\n')
 				// TODO: This should be done at the end of compilation to avoid duplicates
 				file.appendToFile(fs, langPath(lang), importStatements)
