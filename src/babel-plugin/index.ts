@@ -20,8 +20,7 @@ export default function(): Babel.PluginObj<VisitorState> {
 		name: 'translation-compiler',
 		visitor: {
 			CallExpression(path, state) {
-				if (!isTranslationFile(state)) return
-				annotateAsPure(path)
+				if (isTranslationFile(state)) annotateAsPure(path)
 			},
 			ExportDefaultDeclaration,
 			ImportDeclaration,
