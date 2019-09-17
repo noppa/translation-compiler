@@ -41,7 +41,7 @@ export function ImportDeclaration(path: NodePath<t.ImportDeclaration>, state: Vi
 		state.imports.map(def => t.importSpecifier(def.as, def.name)),
 		t.stringLiteral(translateRuntimePath),
 	)
-	path.insertBefore(importDeclaration)
+	path.replaceWith(importDeclaration)
 	path.stop()
 }
 
