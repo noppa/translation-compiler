@@ -14,6 +14,7 @@ module.exports = {
 	target: 'web',
 	devtool: 'source-map',
 	output: {
+		publicPath: '/dist/',
 		path: relative('dist'),
 		filename: '[name].js',
 	},

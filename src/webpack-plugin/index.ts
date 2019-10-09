@@ -29,14 +29,15 @@ class TranslationPlugin {
 
 		function getTranslationRuntimeFileContents() {
 			const declarations = `
+				const selectedLanguageIndex = 0;
 				const languageCache = new Map();
 				const defaultTranslationForMissingKey = '[Missing translation]'
 			`
 			const langLoaders = options.languages.map(
-				lang => `
+				(lang, i) => `
 					  ${lang}: () => {
 							import('${langPath(lang)}').then(translationModule => {
-								languageCache.set(i, translationsModule.t);
+								languageCache.set(${i}, translationModule.t);
 							});
 						}
 				`,
@@ -71,38 +72,16 @@ class TranslationPlugin {
 			for (let languageIndex = 0, n = languages.length; languageIndex < n; languageIndex++) {
 				const lang = languages[languageIndex]
 				const importsFromLanguagefile: string[] = []
-				const translatorsForRuntime: string[] = []
 
 				for (const importedIdentifier of importedIds) {
 					const generatedIndex = this.indexGenerator.uniqueIndexForName(importedIdentifier)
 					const translationIdentifier = `${importedIdentifier}_${lang}`
 
 					const importFromLanguagefile = `
-						import ${translationIdentifier} from '${translationFilePath}';
+						import {${translationIdentifier}} from '${translationFilePath}';
 						t.set(${generatedIndex}, ${translationIdentifier});
 					`
 					importsFromLanguagefile.push(importFromLanguagefile)
-
-					const translatorForRuntime = `
-						export const ${translationIdentifier} = _ => {
-							const language = languageCache.get(${languageIndex});
-							if (!language) {
-								// TODO: Shared implementation
-								console.error(new Error('Language ${lang} has not been loaded yet!'));
-							} else {
-								const translate = language.get(${generatedIndex});
-								if (translate) {
-									try {
-										return translate(_);
-									} catch(err) {
-										console.error(err)
-									}
-								}
-							}
-							return missingTranslation
-						}
-					`
-					translatorsForRuntime.push(translatorForRuntime)
 				}
 				// TODO: This should be done at the end of compilation to avoid duplicates
 				const importsTemplate = [
@@ -110,6 +89,29 @@ class TranslationPlugin {
 					importsFromLanguagefile.join('\n\n'),
 				].join('\n')
 				file.appendToFile(fs, langPath(lang), importsTemplate)
+			}
+
+			const translatorsForRuntime: string[] = []
+			for (const importedIdentifier of importedIds) {
+				const generatedIndex = this.indexGenerator.uniqueIndexForName(importedIdentifier)
+				const translatorForRuntime = `
+						export const ${importedIdentifier} = _ => {
+							const language = languageCache.get(selectedLanguageIndex);
+							if (language) {
+								const translate = language.get(${generatedIndex});
+								if (translate) {
+									try {
+										return translate(_);
+									} catch(err) {
+										// DEBUG
+										console.error('fail', err)
+									}
+								}
+							}
+							return defaultTranslationForMissingKey
+						}
+					`
+				translatorsForRuntime.push(translatorForRuntime)
 				file.appendToFile(fs, translateRuntimePath, translatorsForRuntime.join('\n\n'))
 			}
 		}

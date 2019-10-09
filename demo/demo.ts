@@ -1,3 +1,5 @@
 import translations from './translations'
 
-console.log(translations.a.b.foo({ x: 5 }))
+setTimeout(() => {
+	console.log(translations.a.b.hello({ name: 'maailma' }))
+}, 2000)
