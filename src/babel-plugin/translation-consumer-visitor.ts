@@ -14,6 +14,7 @@ import { translateRuntimePath } from '../core/constants'
 export function ImportDeclaration(path: NodePath<t.ImportDeclaration>, state: VisitorState) {
 	if (!isVisitingTranslationConsumer(state)) return
 	if (!state.imports) state.imports = []
+
 	// TODO: Better file path resolving? Does Babel have an API for this?
 	const importSource = path.node.source.value
 	const importedPath = resolvePath(dirname(state.filename), importSource)
@@ -22,7 +23,6 @@ export function ImportDeclaration(path: NodePath<t.ImportDeclaration>, state: Vi
 		opts: state.opts,
 		cwd: state.cwd,
 	})
-	console.log('importing', importedPath, importingTranslationFile)
 	if (!importingTranslationFile) return
 
 	const specifiers = path.get('specifiers')
@@ -31,7 +31,6 @@ export function ImportDeclaration(path: NodePath<t.ImportDeclaration>, state: Vi
 	if (specifiers.length !== 1 || !defaultSpecifier.isImportDefaultSpecifier()) {
 		throw path.buildCodeFrameError('Translation file must be imported using default import')
 	}
-	console.log('import')
 	for (const val of Object.values(defaultSpecifier.scope.bindings)) {
 		const refs = val.referencePaths
 		for (const ref of refs) followTranslationsReference(ref, state)
@@ -51,7 +50,6 @@ function followTranslationsReference(ref: NodePath<t.Node>, state: TranslationCo
 		// TODO: Follow the new reference
 		console.log(new Error('Not implemented'))
 	} else if (parent.isMemberExpression()) {
-		console.log('member', parent.node.type)
 		let ancestor: NodePath<t.MemberExpression> = parent
 		const pathParts: any[] = []
 		while (ancestor.parentPath.isMemberExpression()) {
@@ -62,7 +60,6 @@ function followTranslationsReference(ref: NodePath<t.Node>, state: TranslationCo
 			ancestor = parent
 		}
 		// TODO: Make sure we are at a call or spread expression.
-		// TODO: Replace the whole member expression tree with direct import.
 		const highestAncestor = ancestor.get('property') as NodePath<t.ObjectProperty>
 		const statement = highestAncestor.parentPath.parentPath as NodePath<t.Node>
 
@@ -76,7 +73,6 @@ function followTranslationsReference(ref: NodePath<t.Node>, state: TranslationCo
 		const pathName = path.name
 		const importAs = statement.scope.generateUidIdentifier(pathName)
 		state.imports.push({ name: path, as: importAs })
-		console.log('woop', importAs)
 		statement.replaceWith(t.callExpression(importAs, statement.node.arguments))
 	} else {
 		// TODO: Better error.
