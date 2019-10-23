@@ -6,6 +6,8 @@ import { Options, str } from '../core/visitor-utils'
 import { translateRuntimePath } from '../core/constants.js'
 import * as file from './file'
 import UniqueIndexGenerator from './UniqueIndexGenerator'
+import { topLevelDeclarations, languageLoader } from './templates/translationRuntime'
+import { langPath } from './helpers'
 
 const pluginName = 'TranslationPlugin'
 
@@ -28,25 +30,11 @@ class TranslationPlugin {
 		file.setFileIfNotExists(fs, translateRuntimePath, getTranslationRuntimeFileContents)
 
 		function getTranslationRuntimeFileContents() {
-			const declarations = `
-				const selectedLanguageIndex = 0;
-				const languageCache = new Map();
-				const defaultTranslationForMissingKey = '[Missing translation]'
-			`
-			const langLoaders = options.languages.map(
-				(lang, i) => `
-					  ${lang}: () => {
-							import('${langPath(lang)}').then(translationModule => {
-								languageCache.set(${i}, translationModule.t);
-							});
-						}
-				`,
-			)
-
+			const languageLoaders = options.languages.map(languageLoader)
 			return [
-				declarations,
+				topLevelDeclarations,
 				'const _translation_compiler_load_language = {',
-				langLoaders.join(',\n'),
+				languageLoaders.join(',\n'),
 				'};',
 				// DEBUG
 				'_translation_compiler_load_language.fi();',
@@ -117,7 +105,5 @@ class TranslationPlugin {
 		}
 	}
 }
-
-const langPath = (lang: string) => `/translation-compiler/gen/langs/${lang}.js`
 
 export { TranslationPlugin }
