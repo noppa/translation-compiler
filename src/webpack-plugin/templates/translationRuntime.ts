@@ -1,11 +1,31 @@
 import { langPath } from '../helpers'
 
-export const topLevelDeclarations = `
-const selectedLanguageIndex = 0;
-const defaultTranslationForMissingKey = '[Missing translation]'
-`
+export function topLevelDeclarationsTemplate(languageLoaders: string[]) {
+	return `
+var _selectedlanguageIndex = 0;
+var _defaultTranslationForMissingKey = '[Missing translation]';
 
-export function languageLoader(languageName: string, index: number) {
+var _languageLoaders = [
+${languageLoaders.join(',\n')}
+];
+
+export function setLanguage(languageName) {
+	var i = 0, n = _languageLoaders.length, loader;
+	while(i < n) {
+		loader = _languageLoaders[i];
+		if (loader.n === languageName) {
+			_selectedLanguageIndex = i;
+			return;
+		}
+		i++;
+	}
+	throw new Error('Language "' + languageName + '" not found!');
+}
+
+	`
+}
+
+export function languageLoaderTemplate(languageName: string, languageIndex: number) {
 	return `
 	(function(){
 		var cache, pending = false;
@@ -22,7 +42,7 @@ export function languageLoader(languageName: string, index: number) {
 		}
 
 		function choose() {
-			selectedLanguageIndex = ${index};
+			_selectedlanguageIndex = ${languageIndex};
 		}
 
 		function translate(translationIndex, params) {
@@ -40,8 +60,27 @@ export function languageLoader(languageName: string, index: number) {
 			l: load,
 			c: choose,
 			t: translate,
-			s: getStatus
+			s: getStatus,
+			n: '${languageName}'
 		}
-	})(),
+	})()
+	`
+}
+
+export function languageTranslatorTemplate(
+	translationIdentifier: string,
+	translationIndex: number,
+) {
+	return `
+		function ${translationIdentifier}(params) {
+			var language = _languageLoaders[_selectedlanguageIndex];
+			if (language) {
+				var translate = language.t(${translationIndex});
+				if (translate) {
+					return translate(params);
+				}
+			}
+			return _defaultTranslationForMissingKey
+		}
 	`
 }

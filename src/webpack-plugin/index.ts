@@ -6,8 +6,12 @@ import { Options, str } from '../core/visitor-utils'
 import { translateRuntimePath } from '../core/constants.js'
 import * as file from './file'
 import UniqueIndexGenerator from './UniqueIndexGenerator'
-import { topLevelDeclarations, languageLoader } from './templates/translationRuntime'
+import {
+	topLevelDeclarationsTemplate,
+	languageLoaderTemplate,
+} from './templates/translationRuntime'
 import { langPath } from './helpers'
+import { importsFromLanguageFileTemplate } from './templates/lazyLoadableTranslationBundle'
 
 const pluginName = 'TranslationPlugin'
 
@@ -30,15 +34,8 @@ class TranslationPlugin {
 		file.setFileIfNotExists(fs, translateRuntimePath, getTranslationRuntimeFileContents)
 
 		function getTranslationRuntimeFileContents() {
-			const languageLoaders = options.languages.map(languageLoader)
-			return [
-				topLevelDeclarations,
-				'const _translation_compiler_load_language = {',
-				languageLoaders.join(',\n'),
-				'};',
-				// DEBUG
-				'_translation_compiler_load_language.fi();',
-			].join('\n')
+			const languageLoaders = options.languages.map(languageLoaderTemplate)
+			return [topLevelDeclarationsTemplate(languageLoaders)].join('\n')
 		}
 
 		compiler.hooks.normalModuleFactory.tap(pluginName, factory => {
@@ -59,49 +56,21 @@ class TranslationPlugin {
 			const { languages } = options
 			for (let languageIndex = 0, n = languages.length; languageIndex < n; languageIndex++) {
 				const lang = languages[languageIndex]
-				const importsFromLanguagefile: string[] = []
+				const importsTemplate = importsFromLanguageFileTemplate(
+					importedIds.map(_ => ({
+						identifier: _,
+						index: this.indexGenerator.uniqueIndexForName(_),
+					})),
+					translationFilePath,
+				)
 
-				for (const importedIdentifier of importedIds) {
-					const generatedIndex = this.indexGenerator.uniqueIndexForName(importedIdentifier)
-					const translationIdentifier = `${importedIdentifier}_${lang}`
-
-					const importFromLanguagefile = `
-						import {${translationIdentifier}} from '${translationFilePath}';
-						t.set(${generatedIndex}, ${translationIdentifier});
-					`
-					importsFromLanguagefile.push(importFromLanguagefile)
-				}
-				// TODO: This should be done at the end of compilation to avoid duplicates
-				const importsTemplate = [
-					'export const t = new Map();',
-					importsFromLanguagefile.join('\n\n'),
-				].join('\n')
 				file.appendToFile(fs, langPath(lang), importsTemplate)
 			}
 
-			const translatorsForRuntime: string[] = []
-			for (const importedIdentifier of importedIds) {
-				const generatedIndex = this.indexGenerator.uniqueIndexForName(importedIdentifier)
-				const translatorForRuntime = `
-						export const ${importedIdentifier} = _ => {
-							const language = languageCache.get(selectedLanguageIndex);
-							if (language) {
-								const translate = language.get(${generatedIndex});
-								if (translate) {
-									try {
-										return translate(_);
-									} catch(err) {
-										// DEBUG
-										console.error('fail', err)
-									}
-								}
-							}
-							return defaultTranslationForMissingKey
-						}
-					`
-				translatorsForRuntime.push(translatorForRuntime)
-				file.appendToFile(fs, translateRuntimePath, translatorsForRuntime.join('\n\n'))
-			}
+			const translatorsForRuntime: string[] = importedIds.map(
+				_ => 'export ' + languageLoaderTemplate(_, this.indexGenerator.uniqueIndexForName(_)),
+			)
+			file.appendToFile(fs, translateRuntimePath, translatorsForRuntime.join('\n\n'))
 		}
 	}
 }
