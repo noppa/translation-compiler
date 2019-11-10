@@ -7,8 +7,9 @@ import { translateRuntimePath } from '../core/constants.js'
 import * as file from './file'
 import UniqueIndexGenerator from './UniqueIndexGenerator'
 import {
-	topLevelDeclarationsTemplate,
 	languageLoaderTemplate,
+	translationRuntimeTemplate,
+	languageTranslatorTemplate,
 } from './templates/translationRuntime'
 import { langPath } from './helpers'
 import { importsFromLanguageFileTemplate } from './templates/lazyLoadableTranslationBundle'
@@ -34,8 +35,10 @@ class TranslationPlugin {
 		file.setFileIfNotExists(fs, translateRuntimePath, getTranslationRuntimeFileContents)
 
 		function getTranslationRuntimeFileContents() {
-			const languageLoaders = options.languages.map(languageLoaderTemplate)
-			return [topLevelDeclarationsTemplate(languageLoaders)].join('\n')
+			const { languages } = options
+			const languageLoaders = languages.map((lang, i) => languageLoaderTemplate(lang, i))
+			const translationRuntimeCode = translationRuntimeTemplate(languageLoaders)
+			return translationRuntimeCode
 		}
 
 		compiler.hooks.normalModuleFactory.tap(pluginName, factory => {
@@ -62,15 +65,26 @@ class TranslationPlugin {
 						index: this.indexGenerator.uniqueIndexForName(_),
 					})),
 					translationFilePath,
+					lang,
 				)
 
-				file.appendToFile(fs, langPath(lang), importsTemplate)
+				const lazyLoadableFileExports = importedIds.join(',\n')
+
+				file.appendToFile(fs, langPath(lang), [importsTemplate, lazyLoadableFileExports].join('\n'))
 			}
 
-			const translatorsForRuntime: string[] = importedIds.map(
-				_ => 'export ' + languageLoaderTemplate(_, this.indexGenerator.uniqueIndexForName(_)),
-			)
-			file.appendToFile(fs, translateRuntimePath, translatorsForRuntime.join('\n\n'))
+			// TODO: Move to end of compilation to avoid duplicate exports
+			const translatorRuntimeExports = importedIds
+				.map(
+					translationKey =>
+						'export ' +
+						languageTranslatorTemplate(
+							translationKey,
+							this.indexGenerator.uniqueIndexForName(translationKey),
+						),
+				)
+				.join('\n')
+			file.appendToFile(fs, translateRuntimePath, translatorRuntimeExports)
 		}
 	}
 }

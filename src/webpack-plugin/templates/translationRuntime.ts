@@ -1,6 +1,6 @@
 import { langPath } from '../helpers'
 
-export function topLevelDeclarationsTemplate(languageLoaders: string[]) {
+export function translationRuntimeTemplate(languageLoaders: string[]) {
 	return `
 var _selectedlanguageIndex = 0;
 var _defaultTranslationForMissingKey = '[Missing translation]';
@@ -9,17 +9,33 @@ var _languageLoaders = [
 ${languageLoaders.join(',\n')}
 ];
 
-export function setLanguage(languageName) {
+function findLanguageIndexOrError(languageName) {
 	var i = 0, n = _languageLoaders.length, loader;
 	while(i < n) {
 		loader = _languageLoaders[i];
 		if (loader.n === languageName) {
-			_selectedLanguageIndex = i;
-			return;
+			return i;
 		}
 		i++;
 	}
 	throw new Error('Language "' + languageName + '" not found!');
+}
+
+function loadLanguageIndex(languageIndex, forceReload) {
+	var loader = _languageLoaders[languageIndex];
+	if (loader.s > 0 && !forceReload) {
+		return Promise.resolve();
+	}
+	return loader.l();
+}
+
+export function loadLanguage(languageName, forceReload) {
+	return loadLanguageIndex(findLanguageIndexOrError(languageName), !!forceReload);
+}
+
+export function setLanguage(languageName, load) {
+	_selectedLanguageIndex = findLanguageIndexOrError(languageName);
+	if (load) return loadLanguageIndex(_selectedLanguageIndex, false);
 }
 
 	`

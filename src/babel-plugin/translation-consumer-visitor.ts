@@ -31,6 +31,7 @@ export function ImportDeclaration(path: NodePath<t.ImportDeclaration>, state: Vi
 	if (specifiers.length !== 1 || !defaultSpecifier.isImportDefaultSpecifier()) {
 		throw path.buildCodeFrameError('Translation file must be imported using default import')
 	}
+	console.log(defaultSpecifier.scope.bindings)
 	for (const val of Object.values(defaultSpecifier.scope.bindings)) {
 		const refs = val.referencePaths
 		for (const ref of refs) followTranslationsReference(ref, state)

@@ -12,4 +12,6 @@ export interface T {
 const t: T = (_ => _) as any
 const c: any = (_ => _) as any
 
-export { t, c }
+const setLanguage: any = () => 42
+
+export { t, c, setLanguage }
