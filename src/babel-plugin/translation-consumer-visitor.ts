@@ -31,6 +31,8 @@ export function ImportDeclaration(path: NodePath<t.ImportDeclaration>, state: Vi
 	if (specifiers.length !== 1 || !defaultSpecifier.isImportDefaultSpecifier()) {
 		throw path.buildCodeFrameError('Translation file must be imported using default import')
 	}
+	// BUG: Turns out defaultSpecififer.scope.bindings is NOT the way to access this, it actually
+	// contains ALL the bindings in scope.
 	console.log(defaultSpecifier.scope.bindings)
 	for (const val of Object.values(defaultSpecifier.scope.bindings)) {
 		const refs = val.referencePaths
