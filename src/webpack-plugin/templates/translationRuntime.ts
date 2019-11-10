@@ -2,7 +2,7 @@ import { langPath } from '../helpers'
 
 export function translationRuntimeTemplate(languageLoaders: string[]) {
 	return `
-var _selectedlanguageIndex = 0;
+var _selectedLanguageIndex = 0;
 var _defaultTranslationForMissingKey = '[Missing translation]';
 
 var _languageLoaders = [
@@ -38,10 +38,22 @@ export function setLanguage(languageName, load) {
 	if (load) return loadLanguageIndex(_selectedLanguageIndex, false);
 }
 
+function mkTranslator(translationIndex) {
+	return function translate(params) {
+		var language = _languageLoaders[_selectedLanguageIndex];
+		if (language) {
+			var translator = language.t(translationIndex);
+			if (!translator) return _defaultTranslationForMissingKey;
+			return translator(params);
+		}
+		return _defaultTranslationForMissingKey;
+	};
+}
+
 	`
 }
 
-export function languageLoaderTemplate(languageName: string, languageIndex: number) {
+export function languageLoaderTemplate(languageName: string) {
 	return `
 	(function(){
 		var cache, pending = false;
@@ -57,15 +69,8 @@ export function languageLoaderTemplate(languageName: string, languageIndex: numb
 			});
 		}
 
-		function choose() {
-			_selectedlanguageIndex = ${languageIndex};
-		}
-
-		function translate(translationIndex, params) {
-			var translation = cache && cache[translationIndex];
-			if (translation) {
-				return translation(params);
-			}
+		function getTranslator(translationIndex) {
+			return cache && cache[translationIndex];
 		}
 
 		function getStatus() {
@@ -74,8 +79,7 @@ export function languageLoaderTemplate(languageName: string, languageIndex: numb
 
 		return {
 			l: load,
-			c: choose,
-			t: translate,
+			t: getTranslator,
 			s: getStatus,
 			n: '${languageName}'
 		}
@@ -88,15 +92,6 @@ export function languageTranslatorTemplate(
 	translationIndex: number,
 ) {
 	return `
-		function ${translationIdentifier}(params) {
-			var language = _languageLoaders[_selectedlanguageIndex];
-			if (language) {
-				var translate = language.t(${translationIndex});
-				if (translate) {
-					return translate(params);
-				}
-			}
-			return _defaultTranslationForMissingKey
-		}
+		var ${translationIdentifier} = mkTranslator(${translationIndex});
 	`
 }

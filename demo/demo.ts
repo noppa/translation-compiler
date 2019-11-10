@@ -1,5 +1,9 @@
 import translations from './translations'
-import { setLanguage } from '../src/runtime/index'
+
+// HACK: This shouldn't be imported from userland code like this.
+// Instead, import from translation-compiler/runtime and then
+// in Babel compile step turn this into the gen/ path.
+import { setLanguage } from '/translation-compiler/gen/translate'
 
 console.log(setLanguage)
 

@@ -36,7 +36,7 @@ class TranslationPlugin {
 
 		function getTranslationRuntimeFileContents() {
 			const { languages } = options
-			const languageLoaders = languages.map((lang, i) => languageLoaderTemplate(lang, i))
+			const languageLoaders = languages.map(lang => languageLoaderTemplate(lang))
 			const translationRuntimeCode = translationRuntimeTemplate(languageLoaders)
 			return translationRuntimeCode
 		}
@@ -59,18 +59,18 @@ class TranslationPlugin {
 			const { languages } = options
 			for (let languageIndex = 0, n = languages.length; languageIndex < n; languageIndex++) {
 				const lang = languages[languageIndex]
+				const importConfigs = importedIds.map(_ => ({
+					identifier: `${_}_${lang}`,
+					index: this.indexGenerator.uniqueIndexForName(_),
+				}))
+
 				const importsTemplate = importsFromLanguageFileTemplate(
-					importedIds.map(_ => ({
-						identifier: _,
-						index: this.indexGenerator.uniqueIndexForName(_),
-					})),
+					importConfigs,
 					translationFilePath,
 					lang,
 				)
 
-				const lazyLoadableFileExports = importedIds.join(',\n')
-
-				file.appendToFile(fs, langPath(lang), [importsTemplate, lazyLoadableFileExports].join('\n'))
+				file.appendToFile(fs, langPath(lang), importsTemplate)
 			}
 
 			// TODO: Move to end of compilation to avoid duplicate exports
