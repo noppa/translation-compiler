@@ -1,4 +1,4 @@
-import { NodePath } from '@babel/traverse'
+import { NodePath, Node } from '@babel/traverse'
 import * as t from '@babel/types'
 import { resolve as resolvePath, dirname } from 'path'
 import propertyPathToIdentifier from '../core/property-path-to-identifier'
@@ -25,7 +25,7 @@ export function ImportDeclaration(path: NodePath<t.ImportDeclaration>, state: Vi
 	})
 	if (!importingTranslationFile) return
 
-	const specifiers = path.get('specifiers')
+	const specifiers: NodePath[] = path.get('specifiers')
 	const [defaultSpecifier] = specifiers
 	// TODO: Support additional imports?
 	if (specifiers.length !== 1 || !defaultSpecifier.isImportDefaultSpecifier()) {
@@ -47,7 +47,7 @@ export function ImportDeclaration(path: NodePath<t.ImportDeclaration>, state: Vi
 	path.stop()
 }
 
-function followTranslationsReference(ref: NodePath<t.Node>, state: TranslationConsumerState) {
+function followTranslationsReference(ref: NodePath<Node>, state: TranslationConsumerState) {
 	const parent = ref.parentPath
 	if (parent.isAssignmentExpression() || parent.isVariableDeclarator()) {
 		// TODO: Follow the new reference

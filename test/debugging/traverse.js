@@ -15,12 +15,18 @@ const ast = babelParser.parse(code, {
 	sourceType: 'module',
 	plugins: ['typescript'],
 })
+console.log('woopwoop')
 
 const traverser = require('../../dist/babel-plugin/index.js').default().visitor
 
 const pluginOptions = require('../../demo/babel.config.js').plugins[0][1]
 
-babelTraverse.default(ast, traverser, undefined, {
-	filename: testFilename,
-	opts: pluginOptions,
-})
+console.log(pluginOptions)
+
+setTimeout(() => {
+	babelTraverse.default(ast, traverser, undefined, {
+		filename: 'demo/' + testFilename,
+		opts: pluginOptions,
+		cwd: path.join(__dirname, '../..'),
+	})
+}, 500)

@@ -6,9 +6,9 @@
 	"license": "MIT",
 	"private": true,
 	"scripts": {
-		"build": "babel src -d dist --extensions \".ts\" --config-file ./src/babel.config.js",
+		"build": "babel src -d dist --extensions \".ts\" --config-file ./src/babel.config.js --source-maps",
 		"test": "rm demo/dist/* ; webpack --config demo/webpack.config.js",
-		"dev": "node --inspect-brk test/debugging/interactive.js"
+		"dev": "node --inspect-brk test/debugging/traverse.js"
 	},
 	"dependencies": {
 		"@babel/cli": "^7.8.4",

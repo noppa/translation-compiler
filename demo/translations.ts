@@ -1,6 +1,8 @@
-import { t } from '../src/runtime'
+import { t, setLanguage } from '../src/runtime'
 
 const toUpper = (a: string) => a.toUpperCase()
+
+export { setLanguage }
 
 export default {
 	a: {
