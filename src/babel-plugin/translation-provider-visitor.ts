@@ -66,7 +66,7 @@ function visitTranslationObject(
 	// TODO: Check that it's the right kind of call expression.
 	if (objectPropertyValue.isCallExpression()) {
 		// TODO: Other languages.
-		const translationExpr = objectPropertyValue.get('arguments')[0]
+		const translationExpr: NodePath<t.Node> = objectPropertyValue.get('arguments')[0]
 
 		// BUG: This breaks with multiple languages!! Don't mutate the tree, create clones.
 		for (const language of state.opts.languages) {
