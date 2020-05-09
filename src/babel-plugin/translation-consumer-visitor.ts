@@ -1,4 +1,3 @@
-import { NodePath, Node } from '@babel/traverse'
 import * as t from '@babel/types'
 import { resolve as resolvePath, dirname } from 'path'
 import propertyPathToIdentifier from '../core/property-path-to-identifier'
@@ -10,6 +9,9 @@ import {
 	str,
 } from '../core/visitor-utils'
 import { translateRuntimePath } from '../core/constants'
+
+import type { Node } from '@babel/types'
+import type { NodePath } from '@babel/traverse'
 
 export function ImportDeclaration(path: NodePath<t.ImportDeclaration>, state: VisitorState) {
 	if (!isVisitingTranslationConsumer(state)) return
@@ -25,7 +27,7 @@ export function ImportDeclaration(path: NodePath<t.ImportDeclaration>, state: Vi
 	})
 	if (!importingTranslationFile) return
 
-	const specifiers: NodePath[] = path.get('specifiers')
+	const specifiers = path.get('specifiers')
 	const [defaultSpecifier] = specifiers
 	// TODO: Support additional imports?
 	if (specifiers.length !== 1 || !defaultSpecifier.isImportDefaultSpecifier()) {
@@ -40,7 +42,7 @@ export function ImportDeclaration(path: NodePath<t.ImportDeclaration>, state: Vi
 	}
 
 	const importDeclaration = t.importDeclaration(
-		state.imports.map(def => t.importSpecifier(def.as, def.name)),
+		state.imports.map((def) => t.importSpecifier(def.as, def.name)),
 		t.stringLiteral(translateRuntimePath),
 	)
 	path.replaceWith(importDeclaration)
@@ -53,14 +55,14 @@ function followTranslationsReference(ref: NodePath<Node>, state: TranslationCons
 		// TODO: Follow the new reference
 		console.log(new Error('Not implemented'))
 	} else if (parent.isMemberExpression()) {
-		let ancestor: NodePath<t.MemberExpression> = parent
+		let ancestor: NodePath<t.Node> & NodePath<t.MemberExpression> = parent
 		const pathParts: any[] = []
 		while (ancestor.parentPath.isMemberExpression()) {
 			const parent = ancestor.parentPath
 			const property = ancestor.get('property') as NodePath<t.Node>
 			// TODO(type safety): Get rid of these "any" accessors.
 			pathParts.push(property.node['name'])
-			ancestor = parent
+			ancestor = parent as NodePath<t.Node> & NodePath<t.MemberExpression>
 		}
 		// TODO: Make sure we are at a call or spread expression.
 		const highestAncestor = ancestor.get('property') as NodePath<t.ObjectProperty>
