@@ -11,6 +11,10 @@ export default {
 				fi: 'Hei ' + a.name,
 				en: 'Hello ' + toUpper(a.name),
 			})),
+			bye: t(() => ({
+				fi: 'Heippa',
+				en: 'Bye',
+			})),
 		},
 	},
 }

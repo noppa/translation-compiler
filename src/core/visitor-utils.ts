@@ -1,5 +1,6 @@
 import * as t from '@babel/types'
 import * as path from 'path'
+import process from 'process'
 
 export type VisitorStateBase = {
 	filename: string
@@ -38,11 +39,23 @@ export type TranslationFileCheckParams = Pick<VisitorState, 'filename' | 'opts' 
 
 export function isTranslationFile(state: TranslationFileCheckParams): boolean {
 	// TODO: More flexible way to define translation files.
-	const { cwd } = state
-	const translationFiles = state.opts.translationFiles.map((_) => path.join(cwd, _))
+	const { cwd: importerDir, filename } = state
 	// Remove extension
-	const filename = state.filename.replace(/\.[^/.]+$/, '')
-	return translationFiles.includes(filename)
+	const root = process.cwd()
+	const fileExtname = path.extname(filename)
+	const absPath = path.join(importerDir, filename)
+
+	return state.opts.translationFiles.some((translationFilePattern) => {
+		const translationFileExtname = path.extname(translationFilePattern)
+		let absTranslationFilePath = path.join(root, translationFilePattern)
+		if (!translationFileExtname) {
+			// If there's no extension name in the option file pattern, just assume
+			// it's the same as the actual file's extension name.
+			absTranslationFilePath += fileExtname
+		}
+
+		return absPath === absTranslationFilePath
+	})
 }
 
 export const str = (...stringParts: string[]) => stringParts.join(' ')

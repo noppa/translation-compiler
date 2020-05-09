@@ -1,8 +1,4 @@
-import translations, { setLanguage } from './translations'
-
-console.log(setLanguage)
-
-setLanguage('fi', true)
+import translations from './translations'
 
 setTimeout(() => {
 	console.log(translations.a.b.hello({ name: 'maailma' }))

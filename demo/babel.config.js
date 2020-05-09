@@ -9,7 +9,7 @@ module.exports = {
 			translationCompiler,
 			{
 				translationFiles: ['./demo/translations'],
-				languages: ['fi'],
+				languages: ['fi', 'en'],
 			},
 		],
 	],

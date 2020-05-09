@@ -127,10 +127,7 @@ function unwrapTranslationFunction(
 	translationExpr: NodePath<t.FunctionExpression> | NodePath<t.ArrowFunctionExpression>,
 	language: string,
 ) {
-	const returnTypeErrorMsg = str(
-		'Translation factory function must return',
-		`a translation object with ${translationObjectShouldBe}.`,
-	)
+	const returnTypeErrorMsg = `Translation factory function must return a translation object with ${translationObjectShouldBe}.`
 
 	const body = translationExpr.get('body')
 	if (Array.isArray(body)) {
