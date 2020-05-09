@@ -39,10 +39,15 @@ export type TranslationFileCheckParams = Pick<VisitorState, 'filename' | 'opts' 
 export function isTranslationFile(state: TranslationFileCheckParams): boolean {
 	// TODO: More flexible way to define translation files.
 	const { cwd } = state
-	const translationFiles = state.opts.translationFiles.map(_ => path.join(cwd, _))
+	const translationFiles = state.opts.translationFiles.map((_) => path.join(cwd, _))
 	// Remove extension
 	const filename = state.filename.replace(/\.[^/.]+$/, '')
 	return translationFiles.includes(filename)
 }
 
 export const str = (...stringParts: string[]) => stringParts.join(' ')
+
+export function toArray<T>(val: T[] | null | undefined | T): T[] {
+	if (val == null) return []
+	return Array.isArray(val) ? val : [val]
+}

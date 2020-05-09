@@ -100,7 +100,7 @@ const translationObjectShouldBe =
 	'simple object describing {language: "translation string"} pairings'
 
 function unwrapTranslationObject(translationExpr: NodePath<t.ObjectExpression>, language: string) {
-	const prop = translationExpr.get('properties').find(prop => {
+	const prop = translationExpr.get('properties').find((prop) => {
 		const keysShouldBeSimpleErrorMsg = `Translation object properties should be ${translationObjectShouldBe}.`
 		if (!prop.isObjectProperty()) {
 			throw prop.buildCodeFrameError(keysShouldBeSimpleErrorMsg)
@@ -137,9 +137,16 @@ function unwrapTranslationFunction(
 		throw new Error('Unexpected array')
 	}
 	if (body.isBlockStatement()) {
-		const returnStatements: NodePath<t.ReturnStatement>[] = body
-			.get('body')
-			.filter(isPathReturnStatement)
+		const innerBody = (body as NodePath<t.BlockStatement>).get('body')
+		const returnStatements: NodePath<t.ReturnStatement>[] = innerBody
+			.map((p): null | NodePath<t.ReturnStatement> => {
+				if (p.isReturnStatement()) return p
+				return null
+			})
+			.filter(
+				(_: null | NodePath<t.ReturnStatement>): _ is NodePath<t.ReturnStatement> => _ !== null,
+			)
+
 		if (!returnStatements.length) {
 			throw body.buildCodeFrameError(returnTypeErrorMsg)
 		}
@@ -156,8 +163,4 @@ function unwrapTranslationFunction(
 	} else {
 		throw body.buildCodeFrameError(returnTypeErrorMsg)
 	}
-}
-
-function isPathReturnStatement(path: NodePath<t.Statement>): path is NodePath<t.ReturnStatement> {
-	return path.isReturnStatement()
 }

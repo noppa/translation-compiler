@@ -4,7 +4,7 @@ import { VisitorState, isTranslationFile } from '../core/visitor-utils'
 import { ImportDeclaration } from './translation-consumer-visitor'
 import { ExportDefaultDeclaration } from './translation-provider-visitor'
 
-export default function(): Babel.PluginObj<VisitorState> {
+export default function (): Babel.PluginObj<VisitorState> {
 	return {
 		name: 'translation-compiler',
 		visitor: {
