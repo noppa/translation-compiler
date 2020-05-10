@@ -1,4 +1,4 @@
-import { NodePath } from '@babel/traverse'
+import traverse from '@babel/traverse'
 import * as t from '@babel/types'
 import propertyPathToIdentifier from '../core/property-path-to-identifier'
 import {
@@ -7,6 +7,8 @@ import {
 	isVisitingTranslationProvider,
 	str,
 } from '../core/visitor-utils'
+
+import type { NodePath } from '@babel/traverse'
 
 export function ExportDefaultDeclaration(
 	path: NodePath<t.ExportDefaultDeclaration>,
@@ -65,16 +67,17 @@ function visitTranslationObject(
 	}
 	// TODO: Check that it's the right kind of call expression.
 	if (objectPropertyValue.isCallExpression()) {
-		// TODO: Other languages.
 		const translationExpr: NodePath<t.Node> = objectPropertyValue.get('arguments')[0]
 
 		// BUG: This breaks with multiple languages!! Don't mutate the tree, create clones.
 		for (const language of state.opts.languages) {
 			const exportableId = propertyPathToIdentifier([...path].reverse(), 'fi')
-			if (translationExpr.isArrowFunctionExpression() || translationExpr.isFunctionExpression()) {
-				unwrapTranslationFunction(translationExpr, language)
-			} else if (translationExpr.isObjectExpression()) {
-				unwrapTranslationObject(translationExpr, language)
+			const nodeClone = t.cloneNode(translationExpr.node)
+
+			if (t.isArrowFunctionExpression(nodeClone) || t.isFunctionExpression(nodeClone)) {
+				unwrapTranslationFunction(nodeClone, language)
+			} else if (t.isObjectExpression(nodeClone)) {
+				unwrapTranslationObject(nodeClone, language)
 			} else {
 				throw objectPropertyValue.buildCodeFrameError(
 					'Translation factory function t(..) should be called with' +
@@ -86,9 +89,7 @@ function visitTranslationObject(
 			// The top level default export will be replaced with these later.
 			state.declarations.push(
 				t.exportNamedDeclaration(
-					t.variableDeclaration('const', [
-						t.variableDeclarator(exportableId, translationExpr.node),
-					]),
+					t.variableDeclaration('const', [t.variableDeclarator(exportableId, exprClone.node)]),
 					[],
 				),
 			)
@@ -124,40 +125,22 @@ function unwrapTranslationObject(translationExpr: NodePath<t.ObjectExpression>, 
 }
 
 function unwrapTranslationFunction(
-	translationExpr: NodePath<t.FunctionExpression> | NodePath<t.ArrowFunctionExpression>,
+	translationNode: t.FunctionExpression | t.ArrowFunctionExpression,
 	language: string,
 ) {
 	const returnTypeErrorMsg = `Translation factory function must return a translation object with ${translationObjectShouldBe}.`
 
-	const body = translationExpr.get('body')
-	if (Array.isArray(body)) {
+	const bodyNode = translationNode.body
+	if (Array.isArray(bodyNode)) {
 		throw new Error('Unexpected array')
 	}
-	if (body.isBlockStatement()) {
-		const innerBody = (body as NodePath<t.BlockStatement>).get('body')
-		const returnStatements: NodePath<t.ReturnStatement>[] = innerBody
-			.map((p): null | NodePath<t.ReturnStatement> => {
-				if (p.isReturnStatement()) return p
-				return null
-			})
-			.filter(
-				(_: null | NodePath<t.ReturnStatement>): _ is NodePath<t.ReturnStatement> => _ !== null,
-			)
-
-		if (!returnStatements.length) {
-			throw body.buildCodeFrameError(returnTypeErrorMsg)
-		}
-		for (const rs of returnStatements) {
-			const arg = rs.get('argument')
-			if (!arg.isObjectExpression()) {
-				throw arg.buildCodeFrameError(returnTypeErrorMsg)
-			}
-
-			unwrapTranslationObject(arg, language)
-		}
-	} else if (body.isObjectExpression()) {
-		unwrapTranslationObject(body, language)
-	} else {
-		throw body.buildCodeFrameError(returnTypeErrorMsg)
-	}
+	if (t.isBlockStatement(bodyNode)) {
+		const innerBodyNode = (bodyNode as t.BlockStatement).body
+		traverse(innerBodyNode, {
+			ReturnStatement(returnStatementNode: NodePath<t.ReturnStatement>) {
+				const translationObjExpr = returnStatementNode.get('argument')
+				translationObjExpr.assertObjectExpression()
+				unwrapTranslationObject(translationObjExpr, language)
+			},
+		})
 }

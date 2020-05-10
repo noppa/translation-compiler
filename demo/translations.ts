@@ -16,5 +16,9 @@ export default {
 				en: 'Bye',
 			})),
 		},
+		blaa: t({
+			fi: 'haa',
+			en: 'blaa',
+		}),
 	},
 }
